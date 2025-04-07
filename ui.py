@@ -307,16 +307,16 @@ class UI:
         pygame.draw.rect(self.screen, WHITE, profile_rect, 2)
         
         # Username and race wins
-        username = "Player1"  # Mock username
-        race_wins = 12  # Mock race wins
+        username = game.player_username  # Now using game's player_username
+        race_wins = game.player_races_won  # Now using game's player_races_won
         username_text = self.subtitle_font.render(username, True, WHITE)
         wins_text = self.font.render(f"Races won: {race_wins}", True, (200, 200, 200))
         self.screen.blit(username_text, (100, 15))
         self.screen.blit(wins_text, (100, 50))
         
         # Points and team rating (right side of header)
-        points = 1500  # Mock points
-        team_rating = 78  # Mock team rating
+        points = game.player_points  # Now using game's player_points
+        team_rating = game.player_team_rating  # Now using game's player_team_rating
         points_text = self.subtitle_font.render(f"Points: {points}", True, YELLOW)
         rating_text = self.font.render(f"Team Rating: {team_rating}", True, (200, 200, 200))
         self.screen.blit(points_text, (width - points_text.get_width() - 20, 15))
@@ -364,6 +364,23 @@ class UI:
             pygame.draw.circle(self.screen, wheel_color, pos, wheel_radius)
             pygame.draw.circle(self.screen, (100, 100, 100), pos, wheel_radius - 5)
             
+        # Draw car stats in the preview area
+        stats_y = preview_rect.y + 30
+        stats_font = pygame.font.Font(None, 28)
+        
+        # Calculate and display derived stats
+        max_speed_text = f"Top Speed: {car.max_speed:.1f}"
+        accel_text = f"Acceleration: {car.acceleration * 100:.1f}"
+        turn_text = f"Cornering: {car.turn_speed:.1f}"
+        braking_text = f"Braking: {car.braking:.1f}"
+        
+        stats_texts = [max_speed_text, accel_text, turn_text, braking_text]
+        
+        for stat_text in stats_texts:
+            text_surface = stats_font.render(stat_text, True, (200, 200, 255))
+            self.screen.blit(text_surface, (preview_rect.x + 20, stats_y))
+            stats_y += 30
+            
         # Draw setup options (left panel)
         setup_panel_width = 350
         setup_panel_height = 500
@@ -379,21 +396,20 @@ class UI:
         setup_title = self.subtitle_font.render("CAR SETUP", True, WHITE)
         self.screen.blit(setup_title, (setup_panel_rect.centerx - setup_title.get_width()//2, setup_panel_rect.y + 20))
         
-        # Setup options
-        options = [
-            {"name": "Engine", "value": 4, "max": 10},
-            {"name": "Tires", "value": 3, "max": 10},
-            {"name": "Aerodynamics", "value": 2, "max": 10},
-            {"name": "Handling", "value": 5, "max": 10},
-            {"name": "Brakes", "value": 3, "max": 10}
-        ]
+        # Get mouse position and state for interaction
+        mouse_pos = pygame.mouse.get_pos()
+        mouse_pressed = pygame.mouse.get_pressed()[0]  # Left mouse button
+        
+        # Setup options using data from the car
+        options = list(car.setup.items())
         
         y_offset = setup_panel_rect.y + 80
         option_height = 60
+        game.setup_sliders = {}  # Reset sliders
         
-        for option in options:
+        for key, value in options:
             # Option name
-            name_text = self.font.render(option["name"], True, (200, 200, 255))
+            name_text = self.font.render(key, True, (200, 200, 255))
             self.screen.blit(name_text, (setup_panel_rect.x + 20, y_offset))
             
             # Value bar
@@ -402,19 +418,61 @@ class UI:
             bar_x = setup_panel_rect.x + 20
             bar_y = y_offset + 30
             
+            # Store slider info for interaction
+            slider_rect = pygame.Rect(bar_x, bar_y, bar_width, bar_height)
+            game.setup_sliders[key] = {"rect": slider_rect, "value": value, "max": 10}
+            
+            # Check for slider interaction
+            slider_hovered = slider_rect.collidepoint(mouse_pos)
+            
+            # Handle slider dragging
+            if slider_hovered and mouse_pressed:
+                game.active_slider = key
+            
+            if game.active_slider == key and mouse_pressed:
+                # Calculate new value based on mouse x position
+                rel_x = max(0, min(mouse_pos[0] - bar_x, bar_width))
+                new_value = max(1, min(10, int((rel_x / bar_width) * 10) + 1))
+                
+                # Update the car's setup value
+                car.setup[key] = new_value
+                car.update_performance_from_setup()
+            elif game.active_slider == key and not mouse_pressed:
+                # Release slider when mouse button is released
+                game.active_slider = None
+                
             # Draw empty bar
-            pygame.draw.rect(self.screen, (50, 50, 80), (bar_x, bar_y, bar_width, bar_height))
+            bg_color = (60, 60, 100) if slider_hovered or game.active_slider == key else (50, 50, 80)
+            pygame.draw.rect(self.screen, bg_color, (bar_x, bar_y, bar_width, bar_height))
             
             # Draw filled portion
-            fill_width = int(bar_width * (option["value"] / option["max"]))
-            pygame.draw.rect(self.screen, (100, 150, 250), (bar_x, bar_y, fill_width, bar_height))
+            fill_width = int(bar_width * (value / 10))
+            fill_color = (150, 200, 255) if slider_hovered or game.active_slider == key else (100, 150, 250)
+            pygame.draw.rect(self.screen, fill_color, (bar_x, bar_y, fill_width, bar_height))
             
             # Draw border
-            pygame.draw.rect(self.screen, (100, 100, 180), (bar_x, bar_y, bar_width, bar_height), 1)
+            border_color = (150, 150, 230) if slider_hovered or game.active_slider == key else (100, 100, 180)
+            pygame.draw.rect(self.screen, border_color, (bar_x, bar_y, bar_width, bar_height), 2)
             
             # Draw value text
-            value_text = self.font.render(f"{option['value']}/{option['max']}", True, WHITE)
+            value_text = self.font.render(f"{value}/10", True, WHITE)
             self.screen.blit(value_text, (bar_x + bar_width + 20, bar_y))
+            
+            # Draw property description
+            description = ""
+            if key == "Engine":
+                description = "Affects top speed and acceleration"
+            elif key == "Tires":
+                description = "Affects cornering grip and handling"
+            elif key == "Aerodynamics":
+                description = "Affects top speed and high-speed cornering"
+            elif key == "Handling":
+                description = "Affects responsiveness in corners"
+            elif key == "Brakes":
+                description = "Affects braking efficiency"
+                
+            desc_text = pygame.font.Font(None, 20).render(description, True, (170, 170, 200))
+            self.screen.blit(desc_text, (bar_x, bar_y + 25))
             
             y_offset += option_height
         
@@ -452,11 +510,15 @@ class UI:
             button_height
         )
         
+        # Check if mouse is over button
+        button_hovered = game.start_race_button_rect.collidepoint(mouse_pos)
+        
         # Button background with pulsing effect
         pulse = abs(math.sin(pygame.time.get_ticks() * 0.002)) * 50 + 100
-        button_bg_color = (0, 0, int(pulse))
+        button_bg_color = (0, int(pulse * 0.7), int(pulse)) if button_hovered else (0, 0, int(pulse))
         pygame.draw.rect(self.screen, button_bg_color, game.start_race_button_rect)
-        pygame.draw.rect(self.screen, GREEN, game.start_race_button_rect, 3, border_radius=10)
+        button_border_color = GREEN if not button_hovered else (100, 255, 100)
+        pygame.draw.rect(self.screen, button_border_color, game.start_race_button_rect, 3, border_radius=10)
         
         # Button text
         button_text = "START RACE"
@@ -466,3 +528,8 @@ class UI:
             game.start_race_button_rect.centery - button_surface.get_height()//2
         )
         self.screen.blit(button_surface, button_text_pos)
+        
+        # Draw instruction text
+        instruction = "Drag sliders to adjust car setup. Different setups perform better in different conditions."
+        instruction_surface = self.font.render(instruction, True, (180, 180, 255))
+        self.screen.blit(instruction_surface, (width//2 - instruction_surface.get_width()//2, height - 160))

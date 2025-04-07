@@ -23,11 +23,32 @@ class Car:
         self.angle = 0  # Will be updated in initialize_car_direction()
         self.initialize_car_direction()
         
-        # Car physics properties
+        # Car setup properties (values from 1-10)
+        self.setup = {
+            "Engine": 5,     # Affects top speed and acceleration
+            "Tires": 5,      # Affects cornering and grip
+            "Aerodynamics": 5, # Affects top speed and cornering at high speed
+            "Handling": 5,   # Affects responsiveness in corners
+            "Brakes": 5      # Affects braking efficiency
+        }
+        
+        # Car physics properties - will be modified by setup
+        self.base_max_speed = 6.0
+        self.base_acceleration = 0.15
+        self.base_turn_speed = 3.5
+        self.base_braking = 2.0
+        
+        # Actual performance values (calculated from base + setup)
+        self.max_speed = self.base_max_speed
+        self.acceleration = self.base_acceleration
+        self.turn_speed = self.base_turn_speed
+        self.braking = self.base_braking
+        
+        # Initialize speed
         self.speed = 0
-        self.max_speed = 6.0  # Increased from 5.0 for better performance
-        self.acceleration = 0.15  # Increased from 0.1 for more responsive driving
-        self.turn_speed = 3.5  # Increased from 3.0 for better cornering
+        
+        # Calculate initial performance from setup
+        self.update_performance_from_setup()
         
         # Car dimensions - made smaller
         self.width = 14  # Reduced from 20
@@ -56,7 +77,7 @@ class Car:
         # Driver characteristics (adds some personality)
         self.skill_level = random.uniform(0.8, 1.2)  # Affects driving precision
         self.aggression = random.uniform(0.7, 1.3)   # Affects speed in corners
-    
+        
     def initialize_car_direction(self):
         """Set initial car direction towards first waypoint"""
         # Get first waypoint
@@ -115,17 +136,28 @@ class Car:
         if angle_diff > 180:
             angle_diff -= 360
             
-        # Apply skill level to steering precision - Engineer cars should be more precise
-        precision_factor = self.skill_level * (1.1 if self.is_engineer_car else 1.0)
-        turn_amount = min(abs(angle_diff), self.turn_speed * precision_factor) * (1 if angle_diff > 0 else -1)
+        # Apply skill level and setup handling to steering precision
+        # - Higher handling setup means better turn precision
+        # - Higher tire setup means better grip in turns
+        handling_effect = 0.8 + (self.setup["Handling"] / 10) * 0.4  # 0.8-1.2 range
+        tire_effect = 0.8 + (self.setup["Tires"] / 10) * 0.4  # 0.8-1.2 range
+        
+        # Combine effects into a steering precision factor
+        steering_factor = self.skill_level * ((handling_effect * 0.6) + (tire_effect * 0.4))
+        if self.is_engineer_car:
+            steering_factor *= 1.1  # Engineer cars are slightly more precise
+            
+        turn_amount = min(abs(angle_diff), self.turn_speed * steering_factor) * (1 if angle_diff > 0 else -1)
         self.angle = (self.angle + turn_amount) % 360
         
         # Determine distance to current waypoint
         distance_to_waypoint = math.sqrt(dx**2 + dy**2)
         
         # Improved waypoint transition - change to next waypoint when close enough
-        # Use a smaller threshold for tighter following of the racing line
-        waypoint_threshold = 35 if self.is_engineer_car else 45  # Engineer cars follow more precise line
+        # Better handling means tighter racing line
+        waypoint_threshold = 35 * (1.1 - (handling_effect - 0.8) * 0.5)  # Threshold varies with handling
+        if self.is_engineer_car:
+            waypoint_threshold *= 0.9  # Engineer cars follow more precise line
         
         if distance_to_waypoint < waypoint_threshold:
             self.current_waypoint = (self.current_waypoint + 1) % len(self.track.waypoints)
@@ -192,6 +224,29 @@ class Car:
         elif next_turn_angle > 30:
             next_turn_factor = 0.85
         
+        # Apply car setup factors to turn behavior:
+        # - Better tires and handling allow maintaining more speed in corners
+        # - Better aerodynamics helps with high-speed corners
+        tire_corner_bonus = (self.setup["Tires"] - 5) * 0.015  # -0.06 to +0.075 range
+        handling_corner_bonus = (self.setup["Handling"] - 5) * 0.01  # -0.04 to +0.05 range
+        aero_corner_bonus = (self.setup["Aerodynamics"] - 5) * 0.008  # -0.032 to +0.04 range
+        
+        # Apply bonuses to turn factors (more effective in sharper turns)
+        if turn_angle > 30:  # Only apply significant bonuses in actual corners
+            current_turn_factor += tire_corner_bonus + handling_corner_bonus
+            if self.speed > self.max_speed * 0.7:  # Aero only matters at higher speeds
+                current_turn_factor += aero_corner_bonus
+            
+        # Apply similar bonuses to next turn factor
+        if next_turn_angle > 30:
+            next_turn_factor += tire_corner_bonus * 0.5 + handling_corner_bonus * 0.5
+            if self.speed > self.max_speed * 0.7:
+                next_turn_factor += aero_corner_bonus * 0.5
+        
+        # Ensure factors stay within reasonable bounds
+        current_turn_factor = max(0.3, min(current_turn_factor, 1.0))
+        next_turn_factor = max(0.5, min(next_turn_factor, 1.0))
+        
         # Combine turn factors, with the current turn being more important
         combined_turn_factor = min(current_turn_factor, next_turn_factor * 1.2)
         
@@ -206,20 +261,38 @@ class Car:
         
         # Apply push mode effect
         if self.push_mode:
-            target_speed *= 1.35  # Increased from 1.3 for more dramatic effect
+            push_boost = 1.35  # Base push boost
+            # Engine quality affects push effectiveness
+            engine_push_bonus = (self.setup["Engine"] - 5) * 0.01  # -0.04 to +0.05 range
+            push_boost += engine_push_bonus
+            target_speed *= push_boost
             
-        # Smoother acceleration/deceleration
+        # Smoother acceleration/deceleration based on car setup
         if self.speed < target_speed:
-            # Acceleration - increased for better response
-            accel_factor = 1.8 if self.push_mode else 1.0
+            # Acceleration - affected by engine setup
+            accel_factor = 1.0
+            if self.push_mode:
+                accel_factor = 1.8  # Push mode base acceleration boost
+                
+            # Apply engine quality to acceleration
+            engine_accel_bonus = (self.setup["Engine"] - 5) * 0.04  # -0.16 to +0.2 range
+            accel_factor += engine_accel_bonus
+                
             if self.is_engineer_car:
                 accel_factor *= 1.1  # Engineer cars have better acceleration
+                
             self.speed = min(self.speed + self.acceleration * accel_factor, target_speed)
         else:
-            # Braking - more progressive
-            brake_factor = 2.0
+            # Braking - affected by brakes setup
+            brake_factor = 2.0  # Base braking
+            
+            # Apply brakes quality to deceleration
+            brakes_bonus = (self.setup["Brakes"] - 5) * 0.08  # -0.4 to +0.4 range
+            brake_factor += brakes_bonus
+            
             if self.is_engineer_car:
-                brake_factor = 2.2  # Engineer cars have slightly better braking
+                brake_factor *= 1.1  # Engineer cars have slightly better braking
+                
             self.speed = max(self.speed - self.acceleration * brake_factor, target_speed)
             
         # Convert angle to radians and update position
@@ -354,3 +427,32 @@ class Car:
             status += " [NO PUSH]"
             
         return status
+
+    def update_performance_from_setup(self):
+        """Calculate car performance values based on setup"""
+        # Engine affects top speed and acceleration
+        engine_factor = 0.8 + (self.setup["Engine"] / 10) * 0.4  # 0.8-1.2 range
+        
+        # Tires affect cornering grip
+        tires_factor = 0.8 + (self.setup["Tires"] / 10) * 0.4  # 0.8-1.2 range
+        
+        # Aerodynamics affect top speed and high-speed cornering
+        aero_factor = 0.8 + (self.setup["Aerodynamics"] / 10) * 0.4  # 0.8-1.2 range
+        
+        # Handling affects turn responsiveness
+        handling_factor = 0.8 + (self.setup["Handling"] / 10) * 0.4  # 0.8-1.2 range
+        
+        # Brakes affect braking efficiency
+        brakes_factor = 0.8 + (self.setup["Brakes"] / 10) * 0.4  # 0.8-1.2 range
+        
+        # Calculate performance values
+        self.max_speed = self.base_max_speed * ((engine_factor * 0.7) + (aero_factor * 0.3))
+        self.acceleration = self.base_acceleration * engine_factor
+        self.turn_speed = self.base_turn_speed * ((handling_factor * 0.6) + (tires_factor * 0.4))
+        self.braking = self.base_braking * brakes_factor
+        
+    def set_random_setup(self):
+        """Generate random setup values for AI cars"""
+        for key in self.setup:
+            self.setup[key] = random.randint(3, 8)  # Random values between 3-8
+        self.update_performance_from_setup()

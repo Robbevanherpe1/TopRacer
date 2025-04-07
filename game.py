@@ -40,6 +40,8 @@ class Game:
             car = Car(self.track, color=color, name=name)
             car.can_push = False
             car.is_engineer_car = False
+            # Set random setup for AI cars
+            car.set_random_setup()
             self.cars.append(car)
         
         # Game state
@@ -69,6 +71,8 @@ class Game:
         
         # Customization screen properties
         self.start_race_button_rect = pygame.Rect(0, 0, 300, 70)  # Will position later
+        self.setup_sliders = {}
+        self.active_slider = None
         
         # Player stats (mock data for now)
         self.player_points = 1500
