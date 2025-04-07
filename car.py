@@ -78,8 +78,11 @@ class Car:
         self.skill_level = random.uniform(0.8, 1.2)  # Affects driving precision
         self.aggression = random.uniform(0.7, 1.3)   # Affects speed in corners
         
+
         if self.name == "Team Alpha":
             self.sprite = pygame.image.load("assets/ferrari.png").convert_alpha()
+        elif self.name == "Team Omega":
+            self.sprite = pygame.image.load("assets/bentley.png").convert_alpha()
         else:
             self.sprite = None
         
@@ -372,7 +375,7 @@ class Car:
         
         if self.sprite:
             #scale down the sprite for better fit
-            scaled_sprite = pygame.transform.scale(self.sprite, (45, 60))
+            scaled_sprite = pygame.transform.scale(self.sprite, (40, 55))
             # Rotate sprite because the ferrari image points down by default
             rotated_sprite = pygame.transform.rotate(scaled_sprite, -self.angle + 90)
             rect = rotated_sprite.get_rect(center=(screen_x, screen_y))
