@@ -3,14 +3,18 @@ import sys
 from track import Track
 from car import Car
 import random
+import math
 
 # Initialize pygame
 pygame.init()
 
 # Constants
-SCREEN_WIDTH = 800
-SCREEN_HEIGHT = 600
+SCREEN_WIDTH = 1920  # 1080p resolution width
+SCREEN_HEIGHT = 1080  # 1080p resolution height
 FPS = 60
+
+# Camera constants
+CAMERA_SMOOTHNESS = 0.1  # Lower = smoother but slower camera (between 0.01 and 1.0)
 
 # Colors
 BLACK = (0, 0, 0)
@@ -40,14 +44,14 @@ class Game:
         self.cars = []
         self.selected_car_index = 0
         
-        # Set up initial cars (3 cars for now)
-        for i in range(3):
+        # Set up initial cars (5 cars now instead of 3)
+        for i in range(5):
             color = self.colors[i % len(self.colors)]
             name = f"Car {i+1}"
             car = Car(self.track, color=color, name=name)
             
-            # Only the first two cars can use push mode
-            if i >= 2:  # Third car and beyond can't use push
+            # Only the first three cars can use push mode
+            if i >= 3:  # Fourth and fifth car can't use push
                 car.can_push = False
                 
             self.cars.append(car)
@@ -58,6 +62,10 @@ class Game:
         self.race_time = 0
         self.message = "Welcome to TopRacer! Press SPACE to start/pause. Arrow keys to select car. P to push."
         self.message_timer = 300
+
+        # Camera position
+        self.camera_x = 0
+        self.camera_y = 0
         
     def handle_events(self):
         for event in pygame.event.get():
@@ -103,23 +111,30 @@ class Game:
             # Update message timer
             if self.message_timer > 0:
                 self.message_timer -= 1
+
+            # Update camera position to follow the selected car
+            selected_car = self.cars[self.selected_car_index]
+            target_x = selected_car.x - SCREEN_WIDTH // 2
+            target_y = selected_car.y - SCREEN_HEIGHT // 2
+            self.camera_x += (target_x - self.camera_x) * CAMERA_SMOOTHNESS
+            self.camera_y += (target_y - self.camera_y) * CAMERA_SMOOTHNESS
     
     def draw(self):
         # Fill screen with background color
         screen.fill(BLACK)
         
         # Draw the track
-        self.track.draw(screen)
+        self.track.draw(screen, self.camera_x, self.camera_y)
         
         # Draw all cars
         for i, car in enumerate(self.cars):
-            car.draw(screen)
+            car.draw(screen, self.camera_x, self.camera_y)
             
             # Add indicator for selected car - Fix: ensuring position is integer
             if i == self.selected_car_index:
-                pos_x = int(car.x)
-                pos_y = int(car.y)
-                pygame.draw.circle(screen, WHITE, (pos_x, pos_y), 25, 1)
+                pos_x = int(car.x - self.camera_x)
+                pos_y = int(car.y - self.camera_y)
+                pygame.draw.circle(screen, WHITE, (pos_x, pos_y), 18, 1)  # Reduced from 25 to match smaller car size
         
         # Draw UI
         self.draw_ui()
