@@ -1,0 +1,271 @@
+import pygame
+import random
+import math
+from track import Track
+from car import Car
+from constants import *
+
+class Game:
+    def __init__(self, screen):
+        self.screen = screen
+        self.track = Track()
+        
+        # Create cars with different colors
+        self.colors = [BLUE, RED, GREEN, YELLOW, PURPLE, CYAN, ORANGE]
+        self.cars = []
+        self.selected_car_index = 0
+        
+        # Track which cars are controllable by the racing engineer
+        self.engineer_car_indices = []
+        
+        # Set up two special racing engineer cars
+        # First engineer car - blue with special name
+        engineer_car1 = Car(self.track, color=BLUE, name="Team Alpha")
+        engineer_car1.can_push = True
+        engineer_car1.is_engineer_car = True  # Add a flag to identify engineer cars
+        self.cars.append(engineer_car1)
+        self.engineer_car_indices.append(0)
+        
+        # Second engineer car - red with special name
+        engineer_car2 = Car(self.track, color=RED, name="Team Omega")
+        engineer_car2.can_push = True
+        engineer_car2.is_engineer_car = True
+        self.cars.append(engineer_car2)
+        self.engineer_car_indices.append(1)
+        
+        # Set up three regular AI cars (no push capability)
+        for i in range(3):
+            color = self.colors[i+2]  # Start from 3rd color (green, yellow, purple)
+            name = f"AI Car {i+1}"
+            car = Car(self.track, color=color, name=name)
+            car.can_push = False
+            car.is_engineer_car = False
+            self.cars.append(car)
+        
+        # Game state
+        self.running = True
+        self.race_time = 0
+        self.message = "Welcome to TopRacer! Press SPACE to start/pause. Arrow keys to select car. P to push."
+        self.message_timer = 300
+
+        # Race settings
+        self.MAX_LAPS = 10  # Race ends after 10 laps
+        self.race_positions = []  # Will store current race positions
+        self.final_positions = []  # Will store final race positions when race ends
+        self.race_finished = False  # Flag to indicate if race has finished
+
+        # Camera position
+        self.camera_x = 0
+        self.camera_y = 0
+
+        # Game state
+        self.state = STATE_START_SCREEN
+        
+        # Waypoint visibility toggle
+        self.show_waypoints = False
+
+        # Button properties for end screen
+        self.menu_button_rect = pygame.Rect(0, 0, 200, 60)  # Will position later
+        
+    def handle_events(self):
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                self.running = False
+                
+            # Handle window resize events
+            if event.type == pygame.VIDEORESIZE:
+                global SCREEN_WIDTH, SCREEN_HEIGHT
+                SCREEN_WIDTH, SCREEN_HEIGHT = event.size
+                self.screen = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT), pygame.RESIZABLE)
+                
+            # Handle mouse clicks for the race end screen
+            if event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:  # Left mouse click
+                if self.state == STATE_RACE_END:
+                    # Check if Return to Main Menu button was clicked
+                    if self.menu_button_rect.collidepoint(event.pos):
+                        # Reset the race and go back to start screen
+                        self.reset_race()
+                        self.state = STATE_START_SCREEN
+                
+            if event.type == pygame.KEYDOWN:
+                if event.key == pygame.K_SPACE:
+                    if self.state == STATE_START_SCREEN:
+                        self.state = STATE_RACING
+                        self.message = "Race started!"
+                        self.message_timer = 180
+                    elif self.state == STATE_RACING:
+                        self.state = STATE_PAUSE
+                        self.message = "Game Paused!"
+                        self.message_timer = 180
+                    elif self.state == STATE_PAUSE:
+                        self.state = STATE_RACING
+                        self.message = "Race resumed!"
+                        self.message_timer = 180
+                        
+                # Also allow returning to menu from race end screen with Escape
+                if event.key == pygame.K_ESCAPE:
+                    if self.state == STATE_RACE_END:
+                        self.reset_race()
+                        self.state = STATE_START_SCREEN
+                    elif self.state != STATE_START_SCREEN:
+                        self.state = STATE_START_SCREEN
+                        self.message = "Returned to start screen!"
+                        self.message_timer = 180
+                
+                # Toggle waypoints visibility with W key
+                if event.key == pygame.K_w and self.state != STATE_START_SCREEN and self.state != STATE_RACE_END:
+                    self.show_waypoints = not self.show_waypoints
+                    if self.show_waypoints:
+                        self.message = "Waypoints visible"
+                    else:
+                        self.message = "Waypoints hidden"
+                    self.message_timer = 120
+                
+                # Select different engineer car with arrow keys
+                if event.key == pygame.K_LEFT or event.key == pygame.K_UP:
+                    # Cycle through only the engineer cars
+                    if len(self.engineer_car_indices) > 0:
+                        # Find current index in engineer_car_indices
+                        current_idx = self.engineer_car_indices.index(self.selected_car_index) \
+                            if self.selected_car_index in self.engineer_car_indices else 0
+                        # Get previous engineer car index
+                        next_idx = (current_idx - 1) % len(self.engineer_car_indices)
+                        self.selected_car_index = self.engineer_car_indices[next_idx]
+                        self.message = f"Selected {self.cars[self.selected_car_index].name}"
+                        self.message_timer = 120
+                    
+                if event.key == pygame.K_RIGHT or event.key == pygame.K_DOWN:
+                    # Cycle through only the engineer cars
+                    if len(self.engineer_car_indices) > 0:
+                        # Find current index in engineer_car_indices
+                        current_idx = self.engineer_car_indices.index(self.selected_car_index) \
+                            if self.selected_car_index in self.engineer_car_indices else 0
+                        # Get next engineer car index
+                        next_idx = (current_idx + 1) % len(self.engineer_car_indices)
+                        self.selected_car_index = self.engineer_car_indices[next_idx]
+                        self.message = f"Selected {self.cars[self.selected_car_index].name}"
+                        self.message_timer = 120
+                    
+                # Engineer commands
+                if event.key == pygame.K_p and self.state == STATE_RACING:
+                    selected_car = self.cars[self.selected_car_index]
+                    response = selected_car.toggle_push_mode()
+                    self.message = response
+                    self.message_timer = 180
+    
+    def update(self):
+        if self.state == STATE_RACING:
+            # Update race time
+            self.race_time += 1
+            
+            # Update all cars
+            for car in self.cars:
+                car.update(1)
+                
+            # Update message timer
+            if self.message_timer > 0:
+                self.message_timer -= 1
+
+            # Update camera position to follow the selected car
+            selected_car = self.cars[self.selected_car_index]
+            target_x = selected_car.x - SCREEN_WIDTH // 2
+            target_y = selected_car.y - SCREEN_HEIGHT // 2
+            self.camera_x += (target_x - self.camera_x) * CAMERA_SMOOTHNESS
+            self.camera_y += (target_y - self.camera_y) * CAMERA_SMOOTHNESS
+            
+            # Update race positions
+            self.update_race_positions()
+
+    def update_race_positions(self):
+        """Calculate current race positions based on laps completed and distance to next waypoint"""
+        # Create a list of (car_index, score) tuples where higher score = better position
+        positions_data = []
+        
+        total_waypoints = len(self.track.waypoints)
+        
+        for i, car in enumerate(self.cars):
+            # Get the current target waypoint coordinates
+            target_waypoint = self.track.waypoints[car.current_waypoint]
+            waypoint_x = target_waypoint[0] * self.track.tile_size + self.track.tile_size // 2
+            waypoint_y = target_waypoint[1] * self.track.tile_size + self.track.tile_size // 2
+            
+            # Calculate distance to current waypoint
+            dx = waypoint_x - car.x
+            dy = waypoint_y - car.y
+            distance_to_waypoint = math.sqrt(dx**2 + dy**2)
+            
+            # Normalize the distance (0 = far, 1 = close)
+            max_distance = self.track.tile_size * 4  # Max expected distance
+            normalized_distance = max(0, 1 - (distance_to_waypoint / max_distance))
+            
+            # Create a comprehensive score:
+            # - Primary: Current lap (biggest factor)
+            # - Secondary: Current waypoint (fraction through current lap)
+            # - Tertiary: Distance to next waypoint (small adjustment)
+            waypoint_progress = car.current_waypoint / total_waypoints
+            distance_factor = normalized_distance / (total_waypoints * 2)  # Make distance less significant than waypoint
+            
+            # Final score formula - higher is better
+            score = car.laps + waypoint_progress + distance_factor
+            
+            positions_data.append((i, score))
+        
+        # Sort by score in descending order (higher score = better position)
+        positions_data.sort(key=lambda x: x[1], reverse=True)
+        
+        # Extract just the car indices in order of position
+        self.race_positions = [idx for idx, _ in positions_data]
+        
+        # Check if any car has completed all laps
+        for car in self.cars:
+            if car.laps >= self.MAX_LAPS and not self.race_finished:
+                self.race_finished = True
+                self.final_positions = self.race_positions.copy()
+                self.state = STATE_RACE_END
+                break
+
+    def reset_race(self):
+        """Reset race state to prepare for a new race"""
+        # Reset race time
+        self.race_time = 0
+        
+        # Reset race positions
+        self.race_positions = []
+        self.final_positions = []
+        self.race_finished = False
+        
+        # Reset all cars to starting position
+        for car in self.cars:
+            # Reset position
+            car.x, car.y = self.track.get_start_position()
+            # Add small random offset to avoid collision at start
+            car.x += random.randint(-5, 5)
+            car.y += random.randint(-5, 5)
+            
+            # Reset direction
+            car.initialize_car_direction()
+            
+            # Reset racing properties
+            car.current_waypoint = 0
+            car.laps = 0
+            car.speed = 0
+            car.crashed = False
+            car.recovery_timer = 0
+            car.push_mode = False
+            car.push_remaining = 0
+            
+            # Keep track of best lap from previous race
+            # car.lap_times = []  # Uncomment to reset lap history
+            # car.best_lap = None  # Uncomment to reset best lap
+            
+            # Reset lap timing
+            car.last_lap_time = 0
+            car.lap_start_time = pygame.time.get_ticks()
+            
+        # Reset camera position
+        self.camera_x = 0
+        self.camera_y = 0
+        
+        # Display message
+        self.message = "Race reset! Press SPACE to start a new race."
+        self.message_timer = 180

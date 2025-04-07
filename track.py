@@ -172,9 +172,9 @@ class Track:
             # Draw waypoint circle
             pygame.draw.circle(surface, waypoint_color, (screen_x, screen_y), 6)
             
-            # Draw waypoint number
-            font = pygame.font.SysFont(None, 20)
-            number_text = font.render(str(i), True, (0, 0, 0))
+            # Create a local font object here instead of using the global one
+            waypoint_font = pygame.font.Font(None, 20)
+            number_text = waypoint_font.render(str(i), True, (0, 0, 0))
             number_rect = number_text.get_rect(center=(screen_x, screen_y))
             surface.blit(number_text, number_rect)
     
