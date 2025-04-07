@@ -97,6 +97,9 @@ class Game:
         self.bg_tiles = []
         self.generate_background_tiles()
         
+        # Waypoint visibility toggle
+        self.show_waypoints = False
+        
     def handle_events(self):
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
@@ -128,6 +131,15 @@ class Game:
                     self.state = STATE_START_SCREEN
                     self.message = "Returned to start screen!"
                     self.message_timer = 180
+                
+                # Toggle waypoints visibility with W key
+                if event.key == pygame.K_w and self.state != STATE_START_SCREEN:
+                    self.show_waypoints = not self.show_waypoints
+                    if self.show_waypoints:
+                        self.message = "Waypoints visible"
+                    else:
+                        self.message = "Waypoints hidden"
+                    self.message_timer = 120
                 
                 # Select different engineer car with arrow keys
                 if event.key == pygame.K_LEFT or event.key == pygame.K_UP:
@@ -193,6 +205,10 @@ class Game:
         else:
             # Draw the track
             self.track.draw(screen, self.camera_x, self.camera_y)
+            
+            # Draw waypoints if enabled
+            if self.show_waypoints:
+                self.track.draw_waypoints(screen, self.camera_x, self.camera_y)
             
             # Draw all cars
             for i, car in enumerate(self.cars):
@@ -309,6 +325,11 @@ class Game:
         time_surface = font.render(time_text, True, WHITE)
         screen.blit(time_surface, (SCREEN_WIDTH - time_surface.get_width() - 10, 10))
         
+        # Show waypoint status
+        waypoint_status = "Waypoints: ON" if self.show_waypoints else "Waypoints: OFF"
+        waypoint_surface = font.render(waypoint_status, True, YELLOW if self.show_waypoints else (120, 120, 120))
+        screen.blit(waypoint_surface, (SCREEN_WIDTH - waypoint_surface.get_width() - 10, 40))
+        
         # Draw current message
         if self.message_timer > 0:
             message_surface = font.render(self.message, True, WHITE)
@@ -317,7 +338,7 @@ class Game:
                         SCREEN_HEIGHT - 30))
         
         # Draw controls help with emphasis on engineer cars
-        controls = "Controls: SPACE - Pause, Arrows - Select Team, P - Push Mode"
+        controls = "Controls: SPACE - Pause, Arrows - Select Team, P - Push, W - Toggle Waypoints"
         controls_surface = font.render(controls, True, WHITE)
         screen.blit(controls_surface, 
                    (SCREEN_WIDTH//2 - controls_surface.get_width()//2, 

@@ -59,46 +59,46 @@ class Track:
         # Enhanced waypoints for optimal racing line - increased from 8 to 24 for smooth navigation
         self.waypoints = [
             # Start/finish straight
-            (13, 23),  # Start line
-            (15, 23),  # Mid start straight
+            (13, 22),  # Start line
+            (15, 22),  # Mid start straight
             (19, 22),  # Approaching turn 1
             
             # Turn 1 (bottom right)
             (21, 20),  # Entry of turn 1
             (22, 18),  # Apex of turn 1
-            (21, 15),  # Exit of turn 1
+            (24, 15),  # Exit of turn 1
             
             # Right side straight
             (24, 13),  # Mid right straight
             (24, 11),  # Approaching turn 2
             
             # Turn 2 (top right)
-            (23, 9),   # Entry of turn 2
-            (21, 7),   # Apex of turn 2
-            (18, 6),   # Exit of turn 2
+            (24, 9),   # Entry of turn 2
+            (22, 6),   # Apex of turn 2
+            (18, 4),   # Exit of turn 2
             
             # Top straight
-            (15, 5),   # Mid top straight  
-            (12, 5),   # Approaching turn 3
+            (15, 3),   # Mid top straight  
+            (12, 3),   # Approaching turn 3
             
             # Turn 3 (top left)
-            (9, 5),    # Entry of turn 3
-            (7, 6),    # Apex of turn 3
-            (6, 8),    # Exit of turn 3
+            (8, 4),    # Entry of turn 3 
+            (5, 6),    # Apex of turn 3 /14
+            (3, 9),    # Exit of turn 3
             
             # Left side straight
-            (5, 11),   # Mid left straight
-            (5, 14),   # Approaching turn 4
+            (3, 11),   # Mid left straight
+            (3, 14),   # Approaching turn 4
             
             # Turn 4 (bottom left)
-            (5, 17),   # Entry of turn 4
+            (4, 17),   # Entry of turn 4
             (6, 19),   # Mid turn 4
             (8, 21),   # Apex of turn 4
             
             # Bottom straight
-            (10, 21),  # Exit of turn 4
+            (10, 22),  # Exit of turn 4
             (11, 22),  # Approaching finish line
-            (12, 23),  # Before start line
+            (12, 22),  # Before start line
         ]
         
     def get_start_position(self):
@@ -141,6 +141,42 @@ class Track:
                     
                     # Draw a border for better visibility
                     pygame.draw.rect(surface, (50, 50, 50), rect, 1)
+    
+    def draw_waypoints(self, surface, camera_x=0, camera_y=0):
+        """Draw the waypoints on the track for debugging/visualization"""
+        # Colors to use for waypoints
+        waypoint_color = (255, 255, 0)  # Yellow
+        connection_color = (0, 200, 200)  # Cyan
+        
+        # First draw connections between waypoints
+        for i in range(len(self.waypoints)):
+            # Get current and next waypoint positions
+            current_wp = self.waypoints[i]
+            next_wp = self.waypoints[(i + 1) % len(self.waypoints)]
+            
+            # Calculate screen positions with camera offset
+            current_x = current_wp[0] * self.tile_size + self.tile_size // 2 - camera_x
+            current_y = current_wp[1] * self.tile_size + self.tile_size // 2 - camera_y
+            next_x = next_wp[0] * self.tile_size + self.tile_size // 2 - camera_x
+            next_y = next_wp[1] * self.tile_size + self.tile_size // 2 - camera_y
+            
+            # Draw a line connecting the waypoints
+            pygame.draw.line(surface, connection_color, (current_x, current_y), (next_x, next_y), 2)
+        
+        # Now draw each waypoint
+        for i, waypoint in enumerate(self.waypoints):
+            # Calculate screen position with camera offset
+            screen_x = waypoint[0] * self.tile_size + self.tile_size // 2 - camera_x
+            screen_y = waypoint[1] * self.tile_size + self.tile_size // 2 - camera_y
+            
+            # Draw waypoint circle
+            pygame.draw.circle(surface, waypoint_color, (screen_x, screen_y), 6)
+            
+            # Draw waypoint number
+            font = pygame.font.SysFont(None, 20)
+            number_text = font.render(str(i), True, (0, 0, 0))
+            number_rect = number_text.get_rect(center=(screen_x, screen_y))
+            surface.blit(number_text, number_rect)
     
     def get_closest_waypoint(self, pos):
         """Get the index of the closest waypoint to a given position"""
