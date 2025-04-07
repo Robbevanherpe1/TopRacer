@@ -78,6 +78,11 @@ class Car:
         self.skill_level = random.uniform(0.8, 1.2)  # Affects driving precision
         self.aggression = random.uniform(0.7, 1.3)   # Affects speed in corners
         
+        if self.name == "Team Alpha":
+            self.sprite = pygame.image.load("assets/ferrari.png").convert_alpha()
+        else:
+            self.sprite = None
+        
     def initialize_car_direction(self):
         """Set initial car direction towards first waypoint"""
         # Get first waypoint
@@ -365,11 +370,19 @@ class Car:
             y = screen_y + xm * sin_a + ym * cos_a
             corners.append((x, y))
         
-        # Fill the car with its color
-        pygame.draw.polygon(surface, self.color, corners)
+        if self.sprite:
+            #scale down the sprite for better fit
+            scaled_sprite = pygame.transform.scale(self.sprite, (45, 60))
+            # Rotate sprite because the ferrari image points down by default
+            rotated_sprite = pygame.transform.rotate(scaled_sprite, -self.angle + 90)
+            rect = rotated_sprite.get_rect(center=(screen_x, screen_y))
+            surface.blit(rotated_sprite, rect)
+        else:
+            # Fill the car with its color
+            pygame.draw.polygon(surface, self.color, corners)
         
         # Draw an outline for better visibility - thicker for engineer cars
-        outline_thickness = 2 if self.is_engineer_car else 1
+        outline_thickness = 1 if self.is_engineer_car else 0
         pygame.draw.polygon(surface, (0, 0, 0), corners, outline_thickness)
         
         # Draw a small line indicating the front of the car - ensure coordinates are integers
