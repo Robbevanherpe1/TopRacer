@@ -56,16 +56,49 @@ class Track:
         self.width = len(self.grid[0])
         self.height = len(self.grid)
         
-        # Define waypoints for AI to follow (x, y) coordinates
+        # Enhanced waypoints for optimal racing line - increased from 8 to 24 for smooth navigation
         self.waypoints = [
+            # Start/finish straight
             (13, 23),  # Start line
-            (8, 5),    # Top left corner
-            (17, 5),   # Top straightaway
-            (23, 11),  # Top right corner
-            (25, 17),  # Right side
-            (17, 21),  # Bottom right corner
-            (8, 21),   # Bottom straightaway
-            (5, 12),   # Left side
+            (15, 23),  # Mid start straight
+            (19, 22),  # Approaching turn 1
+            
+            # Turn 1 (bottom right)
+            (21, 20),  # Entry of turn 1
+            (22, 18),  # Apex of turn 1
+            (21, 15),  # Exit of turn 1
+            
+            # Right side straight
+            (24, 13),  # Mid right straight
+            (24, 11),  # Approaching turn 2
+            
+            # Turn 2 (top right)
+            (23, 9),   # Entry of turn 2
+            (21, 7),   # Apex of turn 2
+            (18, 6),   # Exit of turn 2
+            
+            # Top straight
+            (15, 5),   # Mid top straight  
+            (12, 5),   # Approaching turn 3
+            
+            # Turn 3 (top left)
+            (9, 5),    # Entry of turn 3
+            (7, 6),    # Apex of turn 3
+            (6, 8),    # Exit of turn 3
+            
+            # Left side straight
+            (5, 11),   # Mid left straight
+            (5, 14),   # Approaching turn 4
+            
+            # Turn 4 (bottom left)
+            (5, 17),   # Entry of turn 4
+            (6, 19),   # Mid turn 4
+            (8, 21),   # Apex of turn 4
+            
+            # Bottom straight
+            (10, 21),  # Exit of turn 4
+            (11, 22),  # Approaching finish line
+            (12, 23),  # Before start line
         ]
         
     def get_start_position(self):

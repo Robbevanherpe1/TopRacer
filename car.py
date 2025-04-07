@@ -100,7 +100,7 @@ class Car:
             if self.push_remaining <= 0:
                 self.push_mode = False
         
-        # AI driving logic
+        # AI driving logic - Get current target waypoint coordinates
         target_waypoint = self.track.waypoints[self.current_waypoint]
         waypoint_x = target_waypoint[0] * self.track.tile_size + self.track.tile_size // 2
         waypoint_y = target_waypoint[1] * self.track.tile_size + self.track.tile_size // 2
@@ -115,15 +115,19 @@ class Car:
         if angle_diff > 180:
             angle_diff -= 360
             
-        # Apply skill level to steering precision
-        turn_amount = min(abs(angle_diff), self.turn_speed * self.skill_level) * (1 if angle_diff > 0 else -1)
+        # Apply skill level to steering precision - Engineer cars should be more precise
+        precision_factor = self.skill_level * (1.1 if self.is_engineer_car else 1.0)
+        turn_amount = min(abs(angle_diff), self.turn_speed * precision_factor) * (1 if angle_diff > 0 else -1)
         self.angle = (self.angle + turn_amount) % 360
         
-        # Determine if we should accelerate or brake
+        # Determine distance to current waypoint
         distance_to_waypoint = math.sqrt(dx**2 + dy**2)
         
-        # Change to next waypoint if close enough
-        if distance_to_waypoint < 45:  # Increased from 40 to handle larger track
+        # Improved waypoint transition - change to next waypoint when close enough
+        # Use a smaller threshold for tighter following of the racing line
+        waypoint_threshold = 35 if self.is_engineer_car else 45  # Engineer cars follow more precise line
+        
+        if distance_to_waypoint < waypoint_threshold:
             self.current_waypoint = (self.current_waypoint + 1) % len(self.track.waypoints)
             # Check if we've completed a lap
             if self.current_waypoint == 0:
@@ -136,40 +140,87 @@ class Car:
                 self.lap_start_time = current_time
                 self.laps += 1
         
-        # Look ahead to next waypoint for better racing line
+        # Advanced racing line calculation - look ahead by 2 waypoints for better anticipation
         next_wp_idx = (self.current_waypoint + 1) % len(self.track.waypoints)
         next_waypoint = self.track.waypoints[next_wp_idx]
         next_wp_x = next_waypoint[0] * self.track.tile_size + self.track.tile_size // 2
         next_wp_y = next_waypoint[1] * self.track.tile_size + self.track.tile_size // 2
+        
+        # Also look at waypoint after next for better planning
+        next2_wp_idx = (self.current_waypoint + 2) % len(self.track.waypoints)
+        next2_waypoint = self.track.waypoints[next2_wp_idx]
+        next2_wp_x = next2_waypoint[0] * self.track.tile_size + self.track.tile_size // 2
+        next2_wp_y = next2_waypoint[1] * self.track.tile_size + self.track.tile_size // 2
         
         # Calculate angle between current waypoint and next waypoint
         next_dx = next_wp_x - waypoint_x
         next_dy = next_wp_y - waypoint_y
         next_angle = math.degrees(math.atan2(next_dy, next_dx))
         
-        # Calculate angle difference
-        turn_angle = abs((next_angle - target_angle + 180) % 360 - 180)
+        # Calculate angle for the turn after that
+        next2_dx = next2_wp_x - next_wp_x
+        next2_dy = next2_wp_y - next_wp_y
+        next2_angle = math.degrees(math.atan2(next2_dy, next2_dx))
         
-        # Adjust speed based on conditions
+        # Calculate how sharp the upcoming turns are
+        turn_angle = abs((next_angle - target_angle + 180) % 360 - 180)
+        next_turn_angle = abs((next2_angle - next_angle + 180) % 360 - 180)
+        
+        # Determine maximum safe speed based on course conditions
         target_speed = self.max_speed
         
-        # Reduce speed for sharp turns, affected by aggression factor
-        if turn_angle > 60:
-            target_speed *= (0.4 * self.aggression)
-        elif turn_angle > 45:
-            target_speed *= (0.6 * self.aggression)
-        elif turn_angle > 20:
-            target_speed *= (0.8 * self.aggression)
+        # More sophisticated speed adjustment for turns
+        # Look at both current turn and next turn to plan ahead
+        current_turn_factor = 1.0
+        next_turn_factor = 1.0
         
-        # Apply push mode if active
+        # Factor for current turn
+        if turn_angle > 70:
+            current_turn_factor = 0.35
+        elif turn_angle > 50:
+            current_turn_factor = 0.5
+        elif turn_angle > 30:
+            current_turn_factor = 0.7
+        elif turn_angle > 15:
+            current_turn_factor = 0.85
+        
+        # Factor for next turn - less impact than current turn
+        if next_turn_angle > 70:
+            next_turn_factor = 0.6
+        elif next_turn_angle > 50:
+            next_turn_factor = 0.75
+        elif next_turn_angle > 30:
+            next_turn_factor = 0.85
+        
+        # Combine turn factors, with the current turn being more important
+        combined_turn_factor = min(current_turn_factor, next_turn_factor * 1.2)
+        
+        # Apply driver aggression to speed through turns
+        # Engineer cars can be more aggressive if push mode is active
+        aggression_factor = self.aggression
+        if self.is_engineer_car:
+            aggression_factor += 0.1  # Engineer cars are slightly more aggressive
+        
+        # Calculate final target speed
+        target_speed *= combined_turn_factor * aggression_factor
+        
+        # Apply push mode effect
         if self.push_mode:
-            target_speed *= 1.3  # Increased from 1.2 for more noticeable effect
+            target_speed *= 1.35  # Increased from 1.3 for more dramatic effect
             
-        # Accelerate or decelerate toward target speed
+        # Smoother acceleration/deceleration
         if self.speed < target_speed:
-            self.speed = min(self.speed + self.acceleration * (1.8 if self.push_mode else 1.0), target_speed)
+            # Acceleration - increased for better response
+            accel_factor = 1.8 if self.push_mode else 1.0
+            if self.is_engineer_car:
+                accel_factor *= 1.1  # Engineer cars have better acceleration
+            self.speed = min(self.speed + self.acceleration * accel_factor, target_speed)
         else:
-            self.speed = max(self.speed - self.acceleration * 2, target_speed)
+            # Braking - more progressive
+            brake_factor = 2.0
+            if self.is_engineer_car:
+                brake_factor = 2.2  # Engineer cars have slightly better braking
+            self.speed = max(self.speed - self.acceleration * brake_factor, target_speed)
             
         # Convert angle to radians and update position
         radians = math.radians(self.angle)
