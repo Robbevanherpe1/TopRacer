@@ -14,7 +14,7 @@ class UI:
     def draw_ui(self, game):
         width, height = self.screen.get_size()
         # Draw status of all cars, with engineer cars displayed more prominently
-        y_offset = 10
+        y_offset = 100
         x_offset = width - 330  # Start from the right side of the screen
         
         # First section title for engineer cars
