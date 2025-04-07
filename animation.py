@@ -15,9 +15,10 @@ class Animation:
         """Generate animated background tiles for the start screen"""
         self.bg_tiles = []
         tile_count = 50  # More tiles for a richer background
+        width, height = self.screen.get_size()
         for i in range(tile_count):
-            x = random.randint(0, SCREEN_WIDTH)
-            y = random.randint(0, SCREEN_HEIGHT)
+            x = random.randint(0, width)
+            y = random.randint(0, height)
             size = random.randint(20, 80)
             speed = random.uniform(0.2, 1.5)
             color = random.choice([RED, BLUE, GREEN, YELLOW, PURPLE, CYAN, ORANGE])
@@ -33,11 +34,12 @@ class Animation:
     
     def draw_background_animation(self):
         """Draw and animate the background tiles on the start screen"""
+        width, height = self.screen.get_size()
         # First draw a gradient background
-        for y in range(0, SCREEN_HEIGHT, 4):
+        for y in range(0, height, 4):
             # Create gradient from dark blue to black
             color_val = max(0, 50 - int(y * 50 / SCREEN_HEIGHT))
-            pygame.draw.rect(self.screen, (0, 0, color_val), (0, y, SCREEN_WIDTH, 4))
+            pygame.draw.rect(self.screen, (0, 0, color_val), (0, y, width, 4))
             
         # Now draw animated tiles
         for tile in self.bg_tiles:
@@ -66,13 +68,14 @@ class Animation:
 
     def draw_car_preview(self, colors):
         """Draw an animated car preview on the start screen"""
+        width, height = self.screen.get_size()
         # Get time for animation
         t = pygame.time.get_ticks() / 1000.0
         
         # Draw multiple cars racing in a circle
-        center_x = SCREEN_WIDTH // 2
-        center_y = SCREEN_HEIGHT * 0.75
-        radius = min(SCREEN_WIDTH, SCREEN_HEIGHT) * 0.2
+        center_x = width // 2
+        center_y = height * 0.75
+        radius = min(width, height) * 0.2
         
         for i, color in enumerate(colors[:5]):  # Draw 5 cars
             # Calculate position in circle with offset by index

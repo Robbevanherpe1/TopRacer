@@ -12,9 +12,10 @@ class UI:
         self.subtitle_font = pygame.font.Font(None, 36)
 
     def draw_ui(self, game):
+        width, height = self.screen.get_size()
         # Draw status of all cars, with engineer cars displayed more prominently
         y_offset = 10
-        x_offset = SCREEN_WIDTH - 330  # Start from the right side of the screen
+        x_offset = width - 330  # Start from the right side of the screen
         
         # First section title for engineer cars
         header = "YOUR RACING TEAMS:"
@@ -62,29 +63,30 @@ class UI:
         seconds = (game.race_time // 60) % 60
         time_text = f"Race Time: {minutes:02d}:{seconds:02d}"
         time_surface = self.font.render(time_text, True, WHITE)
-        self.screen.blit(time_surface, (SCREEN_WIDTH - time_surface.get_width() - 10, 10))
+        self.screen.blit(time_surface, (width - time_surface.get_width() - 10, 10))
         
         # Show waypoint status
         waypoint_status = "Waypoints: ON" if game.show_waypoints else "Waypoints: OFF"
         waypoint_surface = self.font.render(waypoint_status, True, YELLOW if game.show_waypoints else (120, 120, 120))
-        self.screen.blit(waypoint_surface, (SCREEN_WIDTH - waypoint_surface.get_width() - 10, 40))
+        self.screen.blit(waypoint_surface, (width - waypoint_surface.get_width() - 10, 40))
         
         # Draw current message
         if game.message_timer > 0:
             message_surface = self.font.render(game.message, True, WHITE)
             self.screen.blit(message_surface, 
-                           (SCREEN_WIDTH//2 - message_surface.get_width()//2, 
-                            SCREEN_HEIGHT - 30))
+                           (width//2 - message_surface.get_width()//2, 
+                            height - 30))
         
         # Draw controls help with emphasis on engineer cars
         controls = "Controls: SPACE - Pause, Arrows - Select Team, P - Push, W - Toggle Waypoints"
         controls_surface = self.font.render(controls, True, WHITE)
         self.screen.blit(controls_surface, 
-                       (SCREEN_WIDTH//2 - controls_surface.get_width()//2, 
-                        SCREEN_HEIGHT - 60))
+                       (width//2 - controls_surface.get_width()//2, 
+                        height - 60))
 
     def draw_position_overlay(self, game):
         """Draw a nice overlay on the top left of the screen showing race positions"""
+        width, height = self.screen.get_size()
         if not game.race_positions:  # Initialize positions if empty
             game.race_positions = list(range(len(game.cars)))
         
@@ -164,6 +166,7 @@ class UI:
             self.screen.blit(lap_text, (circle_x + 20, y_pos + 25 - lap_text.get_height() // 2))
 
     def draw_start_screen(self, game, animation):
+        width, height = self.screen.get_size()
         animation.draw_background_animation()
         
         title = "TopRacer"
@@ -181,59 +184,60 @@ class UI:
         # Draw the title with a shadow effect
         shadow_offset = 2
         title_shadow = self.title_font.render(title, True, (40, 40, 100))
-        self.screen.blit(title_shadow, (SCREEN_WIDTH//2 - title_surface.get_width()//2 + shadow_offset, 
-                                      SCREEN_HEIGHT//2 - 80 + animation.title_y_offset + shadow_offset))
-        self.screen.blit(title_surface, (SCREEN_WIDTH//2 - title_surface.get_width()//2, 
-                                      SCREEN_HEIGHT//2 - 80 + animation.title_y_offset))
+        self.screen.blit(title_shadow, (width//2 - title_surface.get_width()//2 + shadow_offset, 
+                                      height//2 - 80 + animation.title_y_offset + shadow_offset))
+        self.screen.blit(title_surface, (width//2 - title_surface.get_width()//2, 
+                                      height//2 - 80 + animation.title_y_offset))
         
         # Draw subtitle
-        self.screen.blit(subtitle_surface, (SCREEN_WIDTH//2 - subtitle_surface.get_width()//2, 
-                                          SCREEN_HEIGHT//2 - 20))
+        self.screen.blit(subtitle_surface, (width//2 - subtitle_surface.get_width()//2, 
+                                          height//2 - 20))
                                           
         # Draw a pulsing rectangle around the instructions for emphasis
         pulse = abs(math.sin(pygame.time.get_ticks() * 0.002)) * 50 + 100
         rect = instructions_surface.get_rect()
-        rect.center = (SCREEN_WIDTH//2, SCREEN_HEIGHT//2 + 50)
+        rect.center = (width//2, height//2 + 50)
         rect = rect.inflate(20, 10)
         pygame.draw.rect(self.screen, (0, 0, int(pulse)), rect, 2, 3)
                                           
         # Draw instructions and additional info
-        self.screen.blit(instructions_surface, (SCREEN_WIDTH//2 - instructions_surface.get_width()//2, 
-                                            SCREEN_HEIGHT//2 + 40))
-        self.screen.blit(info_surface, (SCREEN_WIDTH//2 - info_surface.get_width()//2, 
-                                    SCREEN_HEIGHT//2 + 100))
+        self.screen.blit(instructions_surface, (width//2 - instructions_surface.get_width()//2, 
+                                            height//2 + 40))
+        self.screen.blit(info_surface, (width//2 - info_surface.get_width()//2, 
+                                    height//2 + 100))
                                     
         # Draw version in bottom right
-        self.screen.blit(version_surface, (SCREEN_WIDTH - version_surface.get_width() - 10, 
-                                        SCREEN_HEIGHT - version_surface.get_height() - 10))
+        self.screen.blit(version_surface, (width - version_surface.get_width() - 10, 
+                                        height - version_surface.get_height() - 10))
         
         # Draw car animation on the start screen
         animation.draw_car_preview(game.colors)
         
     def draw_race_end_screen(self, game, animation):
+        width, height = self.screen.get_size()
         """Draw the race end screen showing final positions and a button to return to main menu"""
         # First draw a nice background
         animation.draw_background_animation()
         
         # Create semi-transparent overlay for better text visibility
-        overlay = pygame.Surface((SCREEN_WIDTH, SCREEN_HEIGHT), pygame.SRCALPHA)
+        overlay = pygame.Surface((width, height), pygame.SRCALPHA)
         overlay.fill((0, 0, 30, 180))  # Dark blue with alpha
         self.screen.blit(overlay, (0, 0))
         
         # Draw race results title
         title_text = "RACE COMPLETE!"
         title_surface = self.title_font.render(title_text, True, WHITE)
-        self.screen.blit(title_surface, (SCREEN_WIDTH//2 - title_surface.get_width()//2, 50))
+        self.screen.blit(title_surface, (width//2 - title_surface.get_width()//2, 50))
         
         # Draw final standings
         subtitle_text = "FINAL STANDINGS"
         subtitle_surface = self.subtitle_font.render(subtitle_text, True, CYAN)
-        self.screen.blit(subtitle_surface, (SCREEN_WIDTH//2 - subtitle_surface.get_width()//2, 130))
+        self.screen.blit(subtitle_surface, (width//2 - subtitle_surface.get_width()//2, 130))
         
         # Create a results panel in the center
         panel_width = 500
         panel_height = len(game.cars) * 50 + 60
-        panel_rect = pygame.Rect(SCREEN_WIDTH//2 - panel_width//2, 180, panel_width, panel_height)
+        panel_rect = pygame.Rect(width//2 - panel_width//2, 180, panel_width, panel_height)
         
         # Draw panel background
         s = pygame.Surface((panel_width, panel_height), pygame.SRCALPHA)
@@ -302,7 +306,7 @@ class UI:
                 self.screen.blit(time_surface, (panel_rect.x + name_offset, y_pos + 30))
         
         # Draw "Return to Main Menu" button
-        game.menu_button_rect = pygame.Rect(SCREEN_WIDTH//2 - 150, panel_rect.bottom + 40, 300, 60)
+        game.menu_button_rect = pygame.Rect(width//2 - 150, panel_rect.bottom + 40, 300, 60)
         
         # Button background with pulsing effect
         pulse = abs(math.sin(pygame.time.get_ticks() * 0.002)) * 50 + 100
