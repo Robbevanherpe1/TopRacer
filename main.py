@@ -307,11 +307,12 @@ class Game:
     def draw_ui(self):
         # Draw status of all cars, with engineer cars displayed more prominently
         y_offset = 10
+        x_offset = SCREEN_WIDTH - 330  # Start from the right side of the screen
         
         # First section title for engineer cars
         header = "YOUR RACING TEAMS:"
         header_surface = font.render(header, True, (255, 255, 100))  # Bright yellow
-        screen.blit(header_surface, (10, y_offset))
+        screen.blit(header_surface, (x_offset, y_offset))
         y_offset += 25
         
         # Draw engineer cars first
@@ -329,14 +330,14 @@ class Game:
                 color = car.color
                 
             status_surface = font.render(status_text, True, color)
-            screen.blit(status_surface, (10, y_offset))
+            screen.blit(status_surface, (x_offset, y_offset))
             y_offset += 25
             
         # Add a separator and title for other cars    
         y_offset += 10
         header = "OTHER COMPETITORS:"
         header_surface = font.render(header, True, (150, 150, 150))  # Gray
-        screen.blit(header_surface, (10, y_offset))
+        screen.blit(header_surface, (x_offset, y_offset))
         y_offset += 25
         
         # Draw non-engineer cars
@@ -346,7 +347,7 @@ class Game:
                 color = (120, 120, 120)  # Dimmed color for AI cars
                 
                 status_surface = font.render(status_text, True, color)
-                screen.blit(status_surface, (10, y_offset))
+                screen.blit(status_surface, (x_offset, y_offset))
                 y_offset += 25
         
         # Draw race time
@@ -489,16 +490,34 @@ class Game:
     def update_race_positions(self):
         """Calculate current race positions based on laps completed and distance to next waypoint"""
         # Create a list of (car_index, score) tuples where higher score = better position
-        # Score is primarily based on laps, secondarily on waypoint progress
         positions_data = []
         
         total_waypoints = len(self.track.waypoints)
         
         for i, car in enumerate(self.cars):
-            # Calculate a score based on laps completed and current waypoint progress
-            # This ensures correct ordering even when cars are on different parts of track
-            waypoint_score = (total_waypoints - car.current_waypoint) / total_waypoints
-            score = car.laps + waypoint_score
+            # Get the current target waypoint coordinates
+            target_waypoint = self.track.waypoints[car.current_waypoint]
+            waypoint_x = target_waypoint[0] * self.track.tile_size + self.track.tile_size // 2
+            waypoint_y = target_waypoint[1] * self.track.tile_size + self.track.tile_size // 2
+            
+            # Calculate distance to current waypoint
+            dx = waypoint_x - car.x
+            dy = waypoint_y - car.y
+            distance_to_waypoint = math.sqrt(dx**2 + dy**2)
+            
+            # Normalize the distance (0 = far, 1 = close)
+            max_distance = self.track.tile_size * 4  # Max expected distance
+            normalized_distance = max(0, 1 - (distance_to_waypoint / max_distance))
+            
+            # Create a comprehensive score:
+            # - Primary: Current lap (biggest factor)
+            # - Secondary: Current waypoint (fraction through current lap)
+            # - Tertiary: Distance to next waypoint (small adjustment)
+            waypoint_progress = car.current_waypoint / total_waypoints
+            distance_factor = normalized_distance / (total_waypoints * 2)  # Make distance less significant than waypoint
+            
+            # Final score formula - higher is better
+            score = car.laps + waypoint_progress + distance_factor
             
             positions_data.append((i, score))
         
@@ -517,14 +536,14 @@ class Game:
                 break
 
     def draw_position_overlay(self):
-        """Draw a nice overlay on the left side of the screen showing race positions"""
+        """Draw a nice overlay on the top left of the screen showing race positions"""
         if not self.race_positions:  # Initialize positions if empty
             self.race_positions = list(range(len(self.cars)))
         
         # Draw a semi-transparent background panel for the position display
         panel_width = 220
         panel_height = len(self.cars) * 40 + 60  # Extra space for title
-        panel_rect = pygame.Rect(20, 120, panel_width, panel_height)
+        panel_rect = pygame.Rect(20, 20, panel_width, panel_height)  # Moved to top left
         
         # Create a semi-transparent surface
         s = pygame.Surface((panel_width, panel_height), pygame.SRCALPHA)
