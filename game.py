@@ -75,9 +75,9 @@ class Game:
         self.active_slider = None
         
         # Player stats - enhanced with proper rewards system
-        self.player_points = 1500
-        self.player_team_rating = 78
-        self.player_races_won = 12
+        self.player_points = 0
+        self.player_team_rating = 0
+        self.player_races_won = 0
         self.player_username = "Player1"
         
         # New stats for last race performance
