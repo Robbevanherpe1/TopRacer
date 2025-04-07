@@ -94,17 +94,34 @@ class Game:
             # Handle mouse clicks for buttons
             if event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:  # Left mouse click
                 if self.state == STATE_RACE_END:
-                    # Check if Return to Main Menu button was clicked
+                    # Check if Return to Customization button was clicked
                     if self.menu_button_rect.collidepoint(event.pos):
-                        # Reset the race and go back to start screen
+                        # Reset the race and go to customization screen
                         self.reset_race()
-                        self.state = STATE_START_SCREEN
+                        self.state = STATE_CUSTOMIZATION
+                        self.message = "Customize your cars for the next race"
+                        self.message_timer = 180
                 elif self.state == STATE_CUSTOMIZATION:
                     # Check if Start Race button was clicked
                     if self.start_race_button_rect.collidepoint(event.pos):
-                        self.state = STATE_RACING
-                        self.message = "Race started!"
-                        self.message_timer = 180
+                        # Check if BOTH engineer cars have balanced setup (sum of all values equals 25)
+                        all_balanced = True
+                        unbalanced_cars = []
+                        
+                        for car_idx in self.engineer_car_indices:
+                            car = self.cars[car_idx]
+                            total_balance = sum(car.setup.values())
+                            if total_balance != 25:
+                                all_balanced = False
+                                unbalanced_cars.append(car.name)
+                        
+                        if all_balanced and hasattr(self, 'race_button_enabled') and self.race_button_enabled:
+                            self.state = STATE_RACING
+                            self.message = "Race started!"
+                            self.message_timer = 180
+                        else:
+                            self.message = f"All cars must have exactly 25 setup points to start! Check: {', '.join(unbalanced_cars)}" if unbalanced_cars else "Car setups must be balanced!"
+                            self.message_timer = 180
                 
             if event.type == pygame.KEYDOWN:
                 if event.key == pygame.K_SPACE:
@@ -122,17 +139,19 @@ class Game:
                         self.message = "Race resumed!"
                         self.message_timer = 180
                         
-                # Also allow returning to menu from screens with Escape
+                # Handle Escape key to return to customization screen during race
                 if event.key == pygame.K_ESCAPE:
                     if self.state == STATE_RACE_END:
+                        # Go to customization screen instead of start screen
                         self.reset_race()
-                        self.state = STATE_START_SCREEN
+                        self.state = STATE_CUSTOMIZATION
                     elif self.state == STATE_CUSTOMIZATION:
                         # Return to start screen from customization
                         self.state = STATE_START_SCREEN
-                    elif self.state != STATE_START_SCREEN:
-                        self.state = STATE_START_SCREEN
-                        self.message = "Returned to start screen!"
+                    elif self.state == STATE_RACING or self.state == STATE_PAUSE:
+                        # Return to customization screen instead of start screen
+                        self.state = STATE_CUSTOMIZATION
+                        self.message = "Returned to customization menu!"
                         self.message_timer = 180
                 
                 # Toggle waypoints visibility with W key

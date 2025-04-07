@@ -456,3 +456,101 @@ class Car:
         for key in self.setup:
             self.setup[key] = random.randint(3, 8)  # Random values between 3-8
         self.update_performance_from_setup()
+        
+    def adjust_setup_balanced(self, key, new_value):
+        """
+        Adjust car setup while maintaining balance.
+        When a value is increased above 5, other values are decreased proportionally.
+        When a value is decreased below 5, other values are increased proportionally.
+        The total sum of all setup values must remain 25 (5 stats × baseline value of 5)
+        """
+        # Get current value and calculate change
+        old_value = self.setup[key]
+        value_change = new_value - old_value
+        
+        # If no change, nothing to do
+        if value_change == 0:
+            return
+        
+        # Set the new value first
+        self.setup[key] = new_value
+        
+        # Calculate how much we need to distribute to/from other stats
+        points_to_distribute = -value_change  # negative because we're balancing
+        
+        # Get list of other keys that can be adjusted (all except the one being changed)
+        other_keys = [k for k in self.setup.keys() if k != key]
+        
+        # Count how many adjustable keys we have (those not already at min or max)
+        if points_to_distribute > 0:  # We need to increase other stats
+            adjustable_keys = [k for k in other_keys if self.setup[k] < 10]
+        else:  # We need to decrease other stats
+            adjustable_keys = [k for k in other_keys if self.setup[k] > 1]
+        
+        # If no adjustable keys, revert the change
+        if not adjustable_keys:
+            self.setup[key] = old_value
+            return
+        
+        # Calculate how many points to distribute to each stat
+        points_per_key = points_to_distribute / len(adjustable_keys)
+        
+        # Apply distribution, ensuring no stat goes below 1 or above 10
+        remaining_points = points_to_distribute
+        for adjust_key in adjustable_keys:
+            # Calculate new value with proportional adjustment
+            if points_per_key > 0:  # Increasing other stats
+                # How much can this stat increase?
+                max_increase = 10 - self.setup[adjust_key]
+                adjustment = min(points_per_key, max_increase)
+            else:  # Decreasing other stats
+                # How much can this stat decrease?
+                max_decrease = self.setup[adjust_key] - 1
+                adjustment = max(points_per_key, -max_decrease)
+            
+            # Apply the adjustment
+            self.setup[adjust_key] += adjustment
+            remaining_points -= adjustment
+        
+        # If we still have points to distribute (due to min/max limits),
+        # try to distribute them among remaining adjustable keys
+        if abs(remaining_points) > 0.01:  # Use a small threshold for floating point comparison
+            # Recalculate adjustable keys
+            if remaining_points > 0:  # We need to increase other stats more
+                adjustable_keys = [k for k in other_keys if self.setup[k] < 10]
+            else:  # We need to decrease other stats more
+                adjustable_keys = [k for k in other_keys if self.setup[k] > 1]
+            
+            # Try another round of distribution if we have adjustable keys
+            if adjustable_keys:
+                points_per_key = remaining_points / len(adjustable_keys)
+                for adjust_key in adjustable_keys:
+                    # Similar logic as before
+                    if points_per_key > 0:
+                        max_increase = 10 - self.setup[adjust_key]
+                        adjustment = min(points_per_key, max_increase)
+                    else:
+                        max_decrease = self.setup[adjust_key] - 1
+                        adjustment = max(points_per_key, -max_decrease)
+                    
+                    self.setup[adjust_key] += adjustment
+                    remaining_points -= adjustment
+                    
+                    # Stop if we've distributed all points
+                    if abs(remaining_points) < 0.01:
+                        break
+            
+            # If we still couldn't distribute all points, revert the original change
+            if abs(remaining_points) > 0.01:
+                # Revert all changes
+                self.setup[key] = old_value
+                for adjust_key in other_keys:
+                    self.setup[adjust_key] = round(self.setup[adjust_key])  # Round to avoid floating point issues
+                return
+        
+        # Round all values to integers to avoid floating point issues
+        for k in self.setup:
+            self.setup[k] = round(self.setup[k])
+        
+        # Update car performance based on new setup
+        self.update_performance_from_setup()

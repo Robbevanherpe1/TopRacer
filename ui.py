@@ -266,7 +266,7 @@ class UI:
                 time_surface = detail_font.render(time_text, True, detail_color)
                 self.screen.blit(time_surface, (panel_rect.x + name_offset, y_pos + 30))
         
-        # Draw "Return to Main Menu" button
+        # Draw "Return to Customization" button - modified button text
         game.menu_button_rect = pygame.Rect(width//2 - 150, panel_rect.bottom + 40, 300, 60)
         
         # Button background with pulsing effect
@@ -275,12 +275,17 @@ class UI:
         pygame.draw.rect(self.screen, button_bg_color, game.menu_button_rect)
         pygame.draw.rect(self.screen, CYAN, game.menu_button_rect, 2, border_radius=10)
         
-        # Button text
-        button_text = "Return to Main Menu"
+        # Button text - changed to reflect going to customization screen
+        button_text = "Customize Cars"
         button_surface = self.subtitle_font.render(button_text, True, WHITE)
         button_text_pos = (game.menu_button_rect.centerx - button_surface.get_width()//2, 
                           game.menu_button_rect.centery - button_surface.get_height()//2)
         self.screen.blit(button_surface, button_text_pos)
+        
+        # Additional hint text
+        hint_text = "Adjust your cars' setup for the next race"
+        hint_surface = self.font.render(hint_text, True, (180, 180, 200))
+        self.screen.blit(hint_surface, (width//2 - hint_surface.get_width()//2, game.menu_button_rect.bottom + 10))
 
     def draw_customization_screen(self, game):
         """Draw the car customization screen where player can set up their car before racing"""
@@ -403,13 +408,32 @@ class UI:
         # Setup options using data from the car
         options = list(car.setup.items())
         
+        # Calculate total balance for all engineer cars
+        total_balance = sum(car.setup.values())
+        balance_color = (200, 200, 255) if total_balance == 25 else (255, 100, 100)
+        
+        # Check if all engineer cars are balanced
+        all_cars_balanced = True
+        for car_idx in game.engineer_car_indices:
+            if sum(game.cars[car_idx].setup.values()) != 25:
+                all_cars_balanced = False
+                break
+        
+        # Draw balance indicator with highlighting if not balanced
+        balance_text = f"Setup Balance: {total_balance}/25"
+        balance_text_surface = self.font.render(balance_text, True, balance_color)
+        self.screen.blit(balance_text_surface, (setup_panel_rect.centerx - balance_text_surface.get_width()//2, setup_panel_rect.y + 50))
+        
+        # Check if we're in an active race (sliders should be disabled)
+        in_active_race = game.state == STATE_RACING or game.state == STATE_PAUSE
+        
         y_offset = setup_panel_rect.y + 80
         option_height = 60
         game.setup_sliders = {}  # Reset sliders
         
         for key, value in options:
             # Option name
-            name_text = self.font.render(key, True, (200, 200, 255))
+            name_text = self.font.render(key, True, (200, 200, 255) if not in_active_race else (150, 150, 180))
             self.screen.blit(name_text, (setup_panel_rect.x + 20, y_offset))
             
             # Value bar
@@ -422,40 +446,67 @@ class UI:
             slider_rect = pygame.Rect(bar_x, bar_y, bar_width, bar_height)
             game.setup_sliders[key] = {"rect": slider_rect, "value": value, "max": 10}
             
-            # Check for slider interaction
-            slider_hovered = slider_rect.collidepoint(mouse_pos)
+            # Check for slider interaction - only if not in active race
+            slider_hovered = slider_rect.collidepoint(mouse_pos) and not in_active_race
             
-            # Handle slider dragging
-            if slider_hovered and mouse_pressed:
+            # Handle slider dragging - only if not in active race
+            if slider_hovered and mouse_pressed and not in_active_race:
                 game.active_slider = key
             
-            if game.active_slider == key and mouse_pressed:
+            if game.active_slider == key and mouse_pressed and not in_active_race:
+                # Store old value to calculate difference
+                old_value = car.setup[key]
+                
                 # Calculate new value based on mouse x position
                 rel_x = max(0, min(mouse_pos[0] - bar_x, bar_width))
                 new_value = max(1, min(10, int((rel_x / bar_width) * 10) + 1))
                 
-                # Update the car's setup value
-                car.setup[key] = new_value
-                car.update_performance_from_setup()
+                # Only proceed if the value actually changed
+                if new_value != old_value:
+                    # Apply the balanced setup adjustment
+                    car.adjust_setup_balanced(key, new_value)
             elif game.active_slider == key and not mouse_pressed:
                 # Release slider when mouse button is released
                 game.active_slider = None
                 
             # Draw empty bar
-            bg_color = (60, 60, 100) if slider_hovered or game.active_slider == key else (50, 50, 80)
+            bg_color = (60, 60, 100) if (slider_hovered or game.active_slider == key) and not in_active_race else (50, 50, 80)
+            if in_active_race:
+                bg_color = (40, 40, 60)  # Darker background when in race
             pygame.draw.rect(self.screen, bg_color, (bar_x, bar_y, bar_width, bar_height))
             
             # Draw filled portion
             fill_width = int(bar_width * (value / 10))
-            fill_color = (150, 200, 255) if slider_hovered or game.active_slider == key else (100, 150, 250)
+            # Colors for indicating value compared to baseline of 5
+            if value > 5:
+                if in_active_race:
+                    fill_color = (60, 150, 90)  # Darker green when in race
+                else:
+                    fill_color = (100, 255, 150) if slider_hovered or game.active_slider == key else (80, 200, 120)
+            elif value < 5:
+                if in_active_race:
+                    fill_color = (150, 90, 60)  # Darker red when in race
+                else:
+                    fill_color = (255, 150, 100) if slider_hovered or game.active_slider == key else (200, 120, 80)
+            else:
+                if in_active_race:
+                    fill_color = (80, 110, 160)  # Darker blue when in race
+                else:
+                    fill_color = (150, 200, 255) if slider_hovered or game.active_slider == key else (100, 150, 250)
             pygame.draw.rect(self.screen, fill_color, (bar_x, bar_y, fill_width, bar_height))
             
+            # Draw baseline marker at value 5
+            baseline_x = bar_x + int(bar_width * (5 / 10))
+            pygame.draw.line(self.screen, (220, 220, 220), (baseline_x, bar_y), (baseline_x, bar_y + bar_height), 2)
+            
             # Draw border
-            border_color = (150, 150, 230) if slider_hovered or game.active_slider == key else (100, 100, 180)
+            border_color = (150, 150, 230) if (slider_hovered or game.active_slider == key) and not in_active_race else (100, 100, 180)
+            if in_active_race:
+                border_color = (80, 80, 130)  # Darker border when in race
             pygame.draw.rect(self.screen, border_color, (bar_x, bar_y, bar_width, bar_height), 2)
             
             # Draw value text
-            value_text = self.font.render(f"{value}/10", True, WHITE)
+            value_text = self.font.render(f"{value}/10", True, WHITE if not in_active_race else (180, 180, 180))
             self.screen.blit(value_text, (bar_x + bar_width + 20, bar_y))
             
             # Draw property description
@@ -471,7 +522,7 @@ class UI:
             elif key == "Brakes":
                 description = "Affects braking efficiency"
                 
-            desc_text = pygame.font.Font(None, 20).render(description, True, (170, 170, 200))
+            desc_text = pygame.font.Font(None, 20).render(description, True, (170, 170, 200) if not in_active_race else (130, 130, 160))
             self.screen.blit(desc_text, (bar_x, bar_y + 25))
             
             y_offset += option_height
@@ -500,7 +551,33 @@ class UI:
             self.screen.blit(text, (upgrade_panel_rect.centerx - text.get_width()//2, y_offset))
             y_offset += 30
         
-        # Draw "Start Race" button at the bottom
+        # Draw setup balance explanation
+        balance_explanation = [
+            "Setup Balance System:",
+            "• Default value for all attributes is 5",
+            "• Increasing one attribute above 5",
+            "  will decrease others to maintain balance",
+            "• Total points must equal 25 (5×5)",
+            "• Both cars must have balanced setups!"
+        ]
+        
+        y_offset += 40
+        for line in balance_explanation:
+            text = self.font.render(line, True, (180, 180, 255))
+            self.screen.blit(text, (upgrade_panel_rect.x + 20, y_offset))
+            y_offset += 25
+        
+        # Draw race status message if we're in a race
+        if in_active_race:
+            status_text = "Race in progress - Setup changes locked"
+            status_surface = self.font.render(status_text, True, (255, 200, 100))
+            self.screen.blit(status_surface, (setup_panel_rect.centerx - status_surface.get_width()//2, setup_panel_rect.y + setup_panel_height - 40))
+            
+            status_text2 = "Press ESC to end race and return to this menu"
+            status_surface2 = self.font.render(status_text2, True, (200, 200, 200))
+            self.screen.blit(status_surface2, (setup_panel_rect.centerx - status_surface2.get_width()//2, setup_panel_rect.y + setup_panel_height - 20))
+        
+        # Draw "Start Race" button at the bottom - disable if in active race
         button_width = 300
         button_height = 70
         game.start_race_button_rect = pygame.Rect(
@@ -511,25 +588,48 @@ class UI:
         )
         
         # Check if mouse is over button
-        button_hovered = game.start_race_button_rect.collidepoint(mouse_pos)
+        button_hovered = game.start_race_button_rect.collidepoint(mouse_pos) and not in_active_race
         
-        # Button background with pulsing effect
+        # Button background with pulsing effect - disable if balance is not correct or in active race
         pulse = abs(math.sin(pygame.time.get_ticks() * 0.002)) * 50 + 100
-        button_bg_color = (0, int(pulse * 0.7), int(pulse)) if button_hovered else (0, 0, int(pulse))
+        if all_cars_balanced and not in_active_race:
+            # Button is enabled
+            button_bg_color = (0, int(pulse * 0.7), int(pulse)) if button_hovered else (0, 0, int(pulse))
+            button_border_color = GREEN if not button_hovered else (100, 255, 100)
+            button_text_color = WHITE
+            game.race_button_enabled = True
+        else:
+            # Button is disabled
+            button_bg_color = (60, 60, 80)
+            button_border_color = (150, 50, 50) if not all_cars_balanced else (80, 80, 110)
+            button_text_color = (180, 180, 180)
+            game.race_button_enabled = False
+            
         pygame.draw.rect(self.screen, button_bg_color, game.start_race_button_rect)
-        button_border_color = GREEN if not button_hovered else (100, 255, 100)
         pygame.draw.rect(self.screen, button_border_color, game.start_race_button_rect, 3, border_radius=10)
         
         # Button text
         button_text = "START RACE"
-        button_surface = self.subtitle_font.render(button_text, True, WHITE)
+        if in_active_race:
+            button_text = "RACE IN PROGRESS"
+            
+        button_surface = self.subtitle_font.render(button_text, True, button_text_color)
         button_text_pos = (
             game.start_race_button_rect.centerx - button_surface.get_width()//2,
             game.start_race_button_rect.centery - button_surface.get_height()//2
         )
         self.screen.blit(button_surface, button_text_pos)
         
-        # Draw instruction text
-        instruction = "Drag sliders to adjust car setup. Different setups perform better in different conditions."
-        instruction_surface = self.font.render(instruction, True, (180, 180, 255))
+        # Draw instruction text or warning
+        if not all_cars_balanced:
+            instruction = "⚠️ Both engineer cars must have exactly 25 setup points to start!"
+            instruction_color = (255, 100, 100)
+        elif in_active_race:
+            instruction = "Race in progress - Return to the race with ESC"
+            instruction_color = (255, 200, 100)
+        else:
+            instruction = "Drag sliders to adjust car setup. Different setups perform better in different conditions."
+            instruction_color = (180, 180, 255)
+            
+        instruction_surface = self.font.render(instruction, True, instruction_color)
         self.screen.blit(instruction_surface, (width//2 - instruction_surface.get_width()//2, height - 160))
