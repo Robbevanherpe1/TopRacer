@@ -1,7 +1,7 @@
 import pygame
 import math
 import random
-from track import WALL
+from track import WALL, TRACK
 
 class Car:
     def __init__(self, track, position=None, color=(0, 0, 255), name="Player"):
@@ -15,12 +15,15 @@ class Car:
         else:
             self.x, self.y = track.get_start_position()
             
-        # Set random starting position offsets for multiple cars
-        self.x += random.randint(-10, 10)
-        self.y += random.randint(-10, 10)
+        # Set safer starting position offsets that avoid walls
+        self.x += random.randint(-5, 5)  # Reduced from -10, 10
+        self.y += random.randint(-5, 5)  # Reduced from -10, 10
+        
+        # Set initial angle to face the right direction towards first waypoint
+        self.angle = 0  # Will be updated in initialize_car_direction()
+        self.initialize_car_direction()
         
         # Car physics properties
-        self.angle = 0  # Angle in degrees (0 = right, 90 = down)
         self.speed = 0
         self.max_speed = 5.0
         self.acceleration = 0.1
@@ -41,19 +44,36 @@ class Car:
         # Race engineer commands
         self.push_mode = False  # When true, car drives more aggressively
         self.push_remaining = 0  # Counts down when in push mode
+        self.can_push = True    # Flag to determine if this car can use push mode
         
         # Collision detection
         self.crashed = False
         self.recovery_timer = 0
+    
+    def initialize_car_direction(self):
+        """Set initial car direction towards first waypoint"""
+        # Get first waypoint
+        target_waypoint = self.track.waypoints[0]
+        waypoint_x = target_waypoint[0] * self.track.tile_size + self.track.tile_size // 2
+        waypoint_y = target_waypoint[1] * self.track.tile_size + self.track.tile_size // 2
+        
+        # Calculate angle to target waypoint
+        dx = waypoint_x - self.x
+        dy = waypoint_y - self.y
+        self.angle = math.degrees(math.atan2(dy, dx))
         
     def toggle_push_mode(self):
         """Toggle 'push' mode for the car (race engineer command)"""
+        # Check if this car can use push mode
+        if not self.can_push:
+            return f"{self.name} can't use push mode!"
+            
         if not self.push_mode:
             self.push_mode = True
             self.push_remaining = 600  # 10 seconds at 60fps
-            return "Push mode activated! Driver will push for 10 seconds."
+            return f"Push mode activated! {self.name} will push for 10 seconds."
         else:
-            return "Already in push mode!"
+            return f"{self.name} is already in push mode!"
     
     def update(self, dt):
         """Update car position and handle AI driving"""
@@ -214,5 +234,9 @@ class Car:
             
         if self.best_lap is not None:
             status += f" | Best: {self.best_lap:.2f}s"
+        
+        # Show push capability
+        if not self.can_push:
+            status += " [NO PUSH]"
             
         return status

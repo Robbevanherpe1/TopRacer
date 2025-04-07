@@ -45,6 +45,11 @@ class Game:
             color = self.colors[i % len(self.colors)]
             name = f"Car {i+1}"
             car = Car(self.track, color=color, name=name)
+            
+            # Only the first two cars can use push mode
+            if i >= 2:  # Third car and beyond can't use push
+                car.can_push = False
+                
             self.cars.append(car)
         
         # Game state
