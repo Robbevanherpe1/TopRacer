@@ -47,8 +47,8 @@ class UI:
             game.race_positions = list(range(len(game.cars)))
         
         # Draw a semi-transparent background panel for the position display
-        panel_width = 220
-        panel_height = len(game.cars) * 40 + 60  # Extra space for title
+        panel_width = 260
+        panel_height = len(game.cars) * 40 + 80  # Extra space for title
         panel_rect = pygame.Rect(20, 20, panel_width, panel_height)  # Moved to top left
         
         # Create a semi-transparent surface
