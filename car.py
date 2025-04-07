@@ -374,26 +374,12 @@ class Car:
             corners.append((x, y))
         
         if self.sprite:
-            #scale down the sprite for better fit
             scaled_sprite = pygame.transform.scale(self.sprite, (40, 55))
-            # Rotate sprite because the image points down by default
             rotated_sprite = pygame.transform.rotate(scaled_sprite, -self.angle + 90)
             rect = rotated_sprite.get_rect(center=(screen_x, screen_y))
             surface.blit(rotated_sprite, rect)
-        else:
-            # Fill the car with its color
-            pygame.draw.polygon(surface, self.color, corners)
-        
-        # Draw an outline for better visibility - thicker for engineer cars
-        outline_thickness = 1 if self.is_engineer_car else 0
-        pygame.draw.polygon(surface, (0, 0, 0), corners, outline_thickness)
-        
-        # Draw a small line indicating the front of the car - ensure coordinates are integers
-        #front_x = int(screen_x + math.cos(math.radians(self.angle)) * 15)
-        #front_y = int(screen_y + math.sin(math.radians(self.angle)) * 15)
-        #pygame.draw.line(surface, (0, 0, 0), (int(screen_x), int(screen_y)), (front_x, front_y), outline_thickness)
-        
-        # Add star indicators for engineer cars
+
+        # Keep star indicator for engineer cars if desired
         if self.is_engineer_car:
             # Draw a star above the car
             star_radius = 8

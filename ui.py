@@ -404,23 +404,14 @@ class UI:
             car_rect_height
         )
         
-        # Draw a simplified car representation
-        pygame.draw.rect(self.screen, car.color, car_rect)
-        pygame.draw.rect(self.screen, (50, 50, 50), car_rect, 2)
+        # Removed default rectangle car representation
+        # Removed wheel drawing
+        if car.sprite:
+            # Draw the sprite instead of the rectangle
+            scaled_sprite = pygame.transform.scale(car.sprite, (120, 160))
+            rect = scaled_sprite.get_rect(center=car_rect.center)
+            self.screen.blit(scaled_sprite, rect)
         
-        # Draw wheels
-        wheel_radius = 25
-        wheel_color = (40, 40, 40)
-        wheel_positions = [
-            (car_rect.left + wheel_radius + 10, car_rect.bottom - wheel_radius - 5),
-            (car_rect.right - wheel_radius - 10, car_rect.bottom - wheel_radius - 5),
-            (car_rect.left + wheel_radius + 10, car_rect.top + wheel_radius + 5),
-            (car_rect.right - wheel_radius - 10, car_rect.top + wheel_radius + 5)
-        ]
-        for pos in wheel_positions:
-            pygame.draw.circle(self.screen, wheel_color, pos, wheel_radius)
-            pygame.draw.circle(self.screen, (100, 100, 100), pos, wheel_radius - 5)
-            
         # Draw car stats in the preview area
         stats_y = preview_rect.y + 30
         stats_font = pygame.font.Font(None, 28)
