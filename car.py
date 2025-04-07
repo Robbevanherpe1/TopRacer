@@ -84,7 +84,7 @@ class Car:
         elif self.name == "Team Omega":
             self.sprite = pygame.image.load("assets/bentley.png").convert_alpha()
         else:
-            self.sprite = None
+            self.sprite = pygame.image.load("assets/porsche.png").convert_alpha()
         
     def initialize_car_direction(self):
         """Set initial car direction towards first waypoint"""
@@ -376,7 +376,7 @@ class Car:
         if self.sprite:
             #scale down the sprite for better fit
             scaled_sprite = pygame.transform.scale(self.sprite, (40, 55))
-            # Rotate sprite because the ferrari image points down by default
+            # Rotate sprite because the image points down by default
             rotated_sprite = pygame.transform.rotate(scaled_sprite, -self.angle + 90)
             rect = rotated_sprite.get_rect(center=(screen_x, screen_y))
             surface.blit(rotated_sprite, rect)
@@ -389,9 +389,9 @@ class Car:
         pygame.draw.polygon(surface, (0, 0, 0), corners, outline_thickness)
         
         # Draw a small line indicating the front of the car - ensure coordinates are integers
-        front_x = int(screen_x + math.cos(math.radians(self.angle)) * 15)
-        front_y = int(screen_y + math.sin(math.radians(self.angle)) * 15)
-        pygame.draw.line(surface, (0, 0, 0), (int(screen_x), int(screen_y)), (front_x, front_y), outline_thickness)
+        #front_x = int(screen_x + math.cos(math.radians(self.angle)) * 15)
+        #front_y = int(screen_y + math.sin(math.radians(self.angle)) * 15)
+        #pygame.draw.line(surface, (0, 0, 0), (int(screen_x), int(screen_y)), (front_x, front_y), outline_thickness)
         
         # Add star indicators for engineer cars
         if self.is_engineer_car:
