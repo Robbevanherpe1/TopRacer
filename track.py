@@ -80,19 +80,19 @@ class Track:
             
             # For now, hardcode some waypoints for the track in track1.csv
             # These should be adjusted based on the actual track layout
-            (start_x + 5, start_y),
-            (start_x + 10, start_y),
-            (start_x + 15, start_y - 3),
-            (start_x + 20, start_y - 5),
-            (start_x + 20, start_y - 10),
-            (start_x + 15, start_y - 15),
-            (start_x + 10, start_y - 15),
-            (start_x + 5, start_y - 12),
-            (start_x, start_y - 10),
-            (start_x - 5, start_y - 8),
-            (start_x - 10, start_y - 5),
-            (start_x - 10, start_y),
-            (start_x - 5, start_y),
+            (start_x + 10, start_y),#1
+            (start_x + 15, start_y),#2
+            (start_x + 24, start_y ),#3
+            (start_x + 26, start_y + 4),#4
+            (start_x + 27, start_y + 10),#5
+            (start_x + 31, start_y + 12),#6
+            (start_x + 36, start_y + 10),#7
+            (start_x + 40, start_y),#8
+            (start_x + 35, start_y - 10),#9
+            (start_x + 30, start_y - 8),#10
+            (start_x + 25, start_y - 5),#11
+            (start_x + 20, start_y),#12
+            (start_x + 15, start_y),#13
         ]
         
         print(f"Defined {len(self.waypoints)} waypoints")

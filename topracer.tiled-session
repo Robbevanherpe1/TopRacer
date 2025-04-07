@@ -3,8 +3,9 @@
         "height": 4300,
         "width": 2
     },
-    "activeFile": "",
+    "activeFile": "untitled.tmx",
     "expandedProjectPaths": [
+        "."
     ],
     "fileStates": {
         "colors.tsx": {
@@ -14,6 +15,14 @@
         "pixil-frame-0.tsx": {
             "scaleInDock": 4.0542,
             "scaleInEditor": 1
+        },
+        "untitled.tmx": {
+            "scale": 2.4691,
+            "selectedLayer": 0,
+            "viewCenter": {
+                "x": 14.377708476772913,
+                "y": 176.98756631971162
+            }
         }
     },
     "last.exportedFilePath": "/Users/robbe/Documents/Projects/Games/TopRacer",
@@ -24,10 +33,13 @@
     "map.tileHeight": 16,
     "map.tileWidth": 16,
     "openFiles": [
+        "pixil-frame-0.tsx",
+        "untitled.tmx"
     ],
     "project": "topracer.tiled-project",
     "recentFiles": [
         "pixil-frame-0.tsx",
+        "untitled.tmx",
         "colors.tsx"
     ],
     "tileset.lastUsedFormat": "tsx",
