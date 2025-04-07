@@ -11,7 +11,7 @@ FINISH_LINE = 12
 TRACKSIDE = 14
 
 class Track:
-    def __init__(self, csv_path='track1.csv'):
+    def __init__(self, csv_path='tracks/track1.csv'):
         self.tile_size = 40  # Increased from 30 to 40
         self.load_from_csv(csv_path)
         self.define_waypoints()
