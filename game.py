@@ -74,11 +74,15 @@ class Game:
         self.setup_sliders = {}
         self.active_slider = None
         
-        # Player stats (mock data for now)
+        # Player stats - enhanced with proper rewards system
         self.player_points = 1500
         self.player_team_rating = 78
         self.player_races_won = 12
         self.player_username = "Player1"
+        
+        # New stats for last race performance
+        self.last_race_points_earned = 0
+        self.last_race_xp_earned = 0
         
     def handle_events(self):
         for event in pygame.event.get():
@@ -139,7 +143,7 @@ class Game:
                         self.message = "Race resumed!"
                         self.message_timer = 180
                         
-                # Handle Escape key to return to customization screen during race
+                # Handle Escape key to return to start screen from customization only
                 if event.key == pygame.K_ESCAPE:
                     if self.state == STATE_RACE_END:
                         # Go to customization screen instead of start screen
@@ -148,11 +152,7 @@ class Game:
                     elif self.state == STATE_CUSTOMIZATION:
                         # Return to start screen from customization
                         self.state = STATE_START_SCREEN
-                    elif self.state == STATE_RACING or self.state == STATE_PAUSE:
-                        # Return to customization screen instead of start screen
-                        self.state = STATE_CUSTOMIZATION
-                        self.message = "Returned to customization menu!"
-                        self.message_timer = 180
+                    # Removed ESC key functionality for exiting race
                 
                 # Toggle waypoints visibility with W key
                 if event.key == pygame.K_w and self.state != STATE_START_SCREEN and self.state != STATE_RACE_END and self.state != STATE_CUSTOMIZATION:
@@ -264,8 +264,55 @@ class Game:
                 self.race_finished = True
                 self.final_positions = self.race_positions.copy()
                 self.state = STATE_RACE_END
+                
+                # Calculate rewards after race completion
+                self.calculate_race_rewards()
                 break
 
+    def calculate_race_rewards(self):
+        """Calculate points and experience earned based on race positions"""
+        # Reset counters for this race
+        self.last_race_points_earned = 0
+        self.last_race_xp_earned = 0
+        
+        # Points scale by position - first place gets significantly more
+        points_by_position = {
+            1: 250, 
+            2: 180, 
+            3: 150, 
+            4: 100, 
+            5: 50
+        }
+        
+        # Experience scale by position
+        # Experience is harder to earn than points
+        xp_by_position = {
+            1: 15,
+            2: 10, 
+            3: 8,
+            4: 5,
+            5: 2
+        }
+        
+        # Check each engineer car's position and award points and XP
+        for car_idx in self.engineer_car_indices:
+            if car_idx in self.final_positions:
+                position = self.final_positions.index(car_idx) + 1
+                
+                # Award points based on position
+                points = points_by_position.get(position, 0)
+                self.last_race_points_earned += points
+                self.player_points += points
+                
+                # Award experience based on position
+                xp = xp_by_position.get(position, 0)
+                self.last_race_xp_earned += xp
+                self.player_team_rating += xp
+                
+                # Track wins
+                if position == 1:
+                    self.player_races_won += 1
+        
     def reset_race(self):
         """Reset race state to prepare for a new race"""
         # Reset race time

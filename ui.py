@@ -266,8 +266,60 @@ class UI:
                 time_surface = detail_font.render(time_text, True, detail_color)
                 self.screen.blit(time_surface, (panel_rect.x + name_offset, y_pos + 30))
         
-        # Draw "Return to Customization" button - modified button text
-        game.menu_button_rect = pygame.Rect(width//2 - 150, panel_rect.bottom + 40, 300, 60)
+        # Show rewards earned
+        if game.last_race_points_earned > 0 or game.last_race_xp_earned > 0:
+            # Create rewards panel
+            rewards_panel_width = 300
+            rewards_panel_height = 120
+            rewards_panel_rect = pygame.Rect(
+                width//2 - rewards_panel_width//2,
+                panel_rect.bottom + 20,
+                rewards_panel_width,
+                rewards_panel_height
+            )
+            
+            # Draw panel background with pulsing glow effect
+            pulse = abs(math.sin(pygame.time.get_ticks() * 0.002)) * 20 + 10
+            s = pygame.Surface((rewards_panel_width, rewards_panel_height), pygame.SRCALPHA)
+            s.fill((40, 40, 100 + int(pulse), 220))
+            self.screen.blit(s, rewards_panel_rect)
+            pygame.draw.rect(self.screen, YELLOW, rewards_panel_rect, 2)
+            
+            # Draw rewards title
+            rewards_title = self.subtitle_font.render("REWARDS EARNED", True, WHITE)
+            self.screen.blit(rewards_title, (rewards_panel_rect.centerx - rewards_title.get_width()//2, 
+                                           rewards_panel_rect.y + 15))
+            
+            # Draw points earned with icon
+            points_text = f"+{game.last_race_points_earned} Points"
+            points_surface = self.font.render(points_text, True, YELLOW)
+            self.screen.blit(points_surface, (rewards_panel_rect.centerx - points_surface.get_width()//2 + 10,
+                                           rewards_panel_rect.y + 55))
+            
+            # Draw star icon for points
+            points_icon = self.subtitle_font.render("★", True, YELLOW)
+            self.screen.blit(points_icon, (rewards_panel_rect.centerx - points_surface.get_width()//2 - 15,
+                                         rewards_panel_rect.y + 53))
+            
+            # Draw XP earned with icon
+            xp_text = f"+{game.last_race_xp_earned} Team Rating"
+            xp_surface = self.font.render(xp_text, True, CYAN)
+            self.screen.blit(xp_surface, (rewards_panel_rect.centerx - xp_surface.get_width()//2 + 10,
+                                        rewards_panel_rect.y + 85))
+            
+            # Draw XP icon
+            xp_icon = self.subtitle_font.render("↑", True, CYAN)
+            self.screen.blit(xp_icon, (rewards_panel_rect.centerx - xp_surface.get_width()//2 - 15,
+                                     rewards_panel_rect.y + 83))
+            
+            # Adjust button position to be below rewards panel
+            button_y_pos = rewards_panel_rect.bottom + 20
+        else:
+            # No rewards, button goes directly below results panel
+            button_y_pos = panel_rect.bottom + 40
+        
+        # Draw "Return to Customization" button
+        game.menu_button_rect = pygame.Rect(width//2 - 150, button_y_pos, 300, 60)
         
         # Button background with pulsing effect
         pulse = abs(math.sin(pygame.time.get_ticks() * 0.002)) * 50 + 100
