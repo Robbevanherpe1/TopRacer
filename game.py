@@ -67,6 +67,15 @@ class Game:
         # Button properties for end screen
         self.menu_button_rect = pygame.Rect(0, 0, 200, 60)  # Will position later
         
+        # Customization screen properties
+        self.start_race_button_rect = pygame.Rect(0, 0, 300, 70)  # Will position later
+        
+        # Player stats (mock data for now)
+        self.player_points = 1500
+        self.player_team_rating = 78
+        self.player_races_won = 12
+        self.player_username = "Player1"
+        
     def handle_events(self):
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
@@ -78,7 +87,7 @@ class Game:
                 SCREEN_WIDTH, SCREEN_HEIGHT = event.size
                 self.screen = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT), pygame.RESIZABLE)
                 
-            # Handle mouse clicks for the race end screen
+            # Handle mouse clicks for buttons
             if event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:  # Left mouse click
                 if self.state == STATE_RACE_END:
                     # Check if Return to Main Menu button was clicked
@@ -86,12 +95,19 @@ class Game:
                         # Reset the race and go back to start screen
                         self.reset_race()
                         self.state = STATE_START_SCREEN
+                elif self.state == STATE_CUSTOMIZATION:
+                    # Check if Start Race button was clicked
+                    if self.start_race_button_rect.collidepoint(event.pos):
+                        self.state = STATE_RACING
+                        self.message = "Race started!"
+                        self.message_timer = 180
                 
             if event.type == pygame.KEYDOWN:
                 if event.key == pygame.K_SPACE:
                     if self.state == STATE_START_SCREEN:
-                        self.state = STATE_RACING
-                        self.message = "Race started!"
+                        # Now go to customization screen instead of directly to racing
+                        self.state = STATE_CUSTOMIZATION
+                        self.message = "Customize your car before racing!"
                         self.message_timer = 180
                     elif self.state == STATE_RACING:
                         self.state = STATE_PAUSE
@@ -102,10 +118,13 @@ class Game:
                         self.message = "Race resumed!"
                         self.message_timer = 180
                         
-                # Also allow returning to menu from race end screen with Escape
+                # Also allow returning to menu from screens with Escape
                 if event.key == pygame.K_ESCAPE:
                     if self.state == STATE_RACE_END:
                         self.reset_race()
+                        self.state = STATE_START_SCREEN
+                    elif self.state == STATE_CUSTOMIZATION:
+                        # Return to start screen from customization
                         self.state = STATE_START_SCREEN
                     elif self.state != STATE_START_SCREEN:
                         self.state = STATE_START_SCREEN
@@ -113,7 +132,7 @@ class Game:
                         self.message_timer = 180
                 
                 # Toggle waypoints visibility with W key
-                if event.key == pygame.K_w and self.state != STATE_START_SCREEN and self.state != STATE_RACE_END:
+                if event.key == pygame.K_w and self.state != STATE_START_SCREEN and self.state != STATE_RACE_END and self.state != STATE_CUSTOMIZATION:
                     self.show_waypoints = not self.show_waypoints
                     if self.show_waypoints:
                         self.message = "Waypoints visible"
@@ -121,7 +140,7 @@ class Game:
                         self.message = "Waypoints hidden"
                     self.message_timer = 120
                 
-                # Select different engineer car with arrow keys
+                # Select different engineer car with arrow keys (works in both race and customization screens)
                 if event.key == pygame.K_LEFT or event.key == pygame.K_UP:
                     # Cycle through only the engineer cars
                     if len(self.engineer_car_indices) > 0:

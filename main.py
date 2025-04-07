@@ -45,6 +45,8 @@ def main():
         # Draw current game state
         if game.state == STATE_START_SCREEN:
             ui.draw_start_screen(game, animation)
+        elif game.state == STATE_CUSTOMIZATION:
+            ui.draw_customization_screen(game)
         elif game.state == STATE_RACE_END:
             ui.draw_race_end_screen(game, animation)
         else:

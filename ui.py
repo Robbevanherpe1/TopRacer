@@ -281,3 +281,188 @@ class UI:
         button_text_pos = (game.menu_button_rect.centerx - button_surface.get_width()//2, 
                           game.menu_button_rect.centery - button_surface.get_height()//2)
         self.screen.blit(button_surface, button_text_pos)
+
+    def draw_customization_screen(self, game):
+        """Draw the car customization screen where player can set up their car before racing"""
+        width, height = self.screen.get_size()
+        
+        # Draw a dark background with gradient
+        for y in range(0, height, 4):
+            # Create gradient from dark blue to darker blue
+            color_val = max(0, 30 - int(y * 20 / height))
+            pygame.draw.rect(self.screen, (0, 0, color_val), (0, y, width, 4))
+            
+        # Draw header bar
+        header_height = 80
+        header_rect = pygame.Rect(0, 0, width, header_height)
+        s = pygame.Surface((width, header_height), pygame.SRCALPHA)
+        s.fill((20, 20, 50, 220))
+        self.screen.blit(s, header_rect)
+        pygame.draw.line(self.screen, (100, 100, 200), (0, header_height), (width, header_height), 2)
+        
+        # Draw profile section (left side of header)
+        # Mock profile picture
+        profile_rect = pygame.Rect(20, 10, 60, 60)
+        pygame.draw.rect(self.screen, (100, 100, 180), profile_rect)
+        pygame.draw.rect(self.screen, WHITE, profile_rect, 2)
+        
+        # Username and race wins
+        username = "Player1"  # Mock username
+        race_wins = 12  # Mock race wins
+        username_text = self.subtitle_font.render(username, True, WHITE)
+        wins_text = self.font.render(f"Races won: {race_wins}", True, (200, 200, 200))
+        self.screen.blit(username_text, (100, 15))
+        self.screen.blit(wins_text, (100, 50))
+        
+        # Points and team rating (right side of header)
+        points = 1500  # Mock points
+        team_rating = 78  # Mock team rating
+        points_text = self.subtitle_font.render(f"Points: {points}", True, YELLOW)
+        rating_text = self.font.render(f"Team Rating: {team_rating}", True, (200, 200, 200))
+        self.screen.blit(points_text, (width - points_text.get_width() - 20, 15))
+        self.screen.blit(rating_text, (width - rating_text.get_width() - 20, 50))
+        
+        # Draw title
+        title = "CAR CUSTOMIZATION"
+        title_surface = self.title_font.render(title, True, WHITE)
+        self.screen.blit(title_surface, (width//2 - title_surface.get_width()//2, 100))
+        
+        # Draw car preview section
+        preview_width = 600
+        preview_height = 400
+        preview_rect = pygame.Rect(width//2 - preview_width//2, 180, preview_width, preview_height)
+        
+        # Draw preview background
+        pygame.draw.rect(self.screen, (30, 30, 60), preview_rect)
+        pygame.draw.rect(self.screen, (80, 80, 150), preview_rect, 2)
+        
+        # Draw car preview (simple visualization)
+        car = game.cars[game.selected_car_index]
+        car_rect_width = 200
+        car_rect_height = 100
+        car_rect = pygame.Rect(
+            preview_rect.centerx - car_rect_width//2,
+            preview_rect.centery - car_rect_height//2,
+            car_rect_width,
+            car_rect_height
+        )
+        
+        # Draw a simplified car representation
+        pygame.draw.rect(self.screen, car.color, car_rect)
+        pygame.draw.rect(self.screen, (50, 50, 50), car_rect, 2)
+        
+        # Draw wheels
+        wheel_radius = 25
+        wheel_color = (40, 40, 40)
+        wheel_positions = [
+            (car_rect.left + wheel_radius + 10, car_rect.bottom - wheel_radius - 5),
+            (car_rect.right - wheel_radius - 10, car_rect.bottom - wheel_radius - 5),
+            (car_rect.left + wheel_radius + 10, car_rect.top + wheel_radius + 5),
+            (car_rect.right - wheel_radius - 10, car_rect.top + wheel_radius + 5)
+        ]
+        for pos in wheel_positions:
+            pygame.draw.circle(self.screen, wheel_color, pos, wheel_radius)
+            pygame.draw.circle(self.screen, (100, 100, 100), pos, wheel_radius - 5)
+            
+        # Draw setup options (left panel)
+        setup_panel_width = 350
+        setup_panel_height = 500
+        setup_panel_rect = pygame.Rect(50, 180, setup_panel_width, setup_panel_height)
+        
+        # Draw panel background
+        s = pygame.Surface((setup_panel_width, setup_panel_height), pygame.SRCALPHA)
+        s.fill((20, 20, 50, 180))
+        self.screen.blit(s, setup_panel_rect)
+        pygame.draw.rect(self.screen, (100, 100, 200), setup_panel_rect, 2)
+        
+        # Setup options title
+        setup_title = self.subtitle_font.render("CAR SETUP", True, WHITE)
+        self.screen.blit(setup_title, (setup_panel_rect.centerx - setup_title.get_width()//2, setup_panel_rect.y + 20))
+        
+        # Setup options
+        options = [
+            {"name": "Engine", "value": 4, "max": 10},
+            {"name": "Tires", "value": 3, "max": 10},
+            {"name": "Aerodynamics", "value": 2, "max": 10},
+            {"name": "Handling", "value": 5, "max": 10},
+            {"name": "Brakes", "value": 3, "max": 10}
+        ]
+        
+        y_offset = setup_panel_rect.y + 80
+        option_height = 60
+        
+        for option in options:
+            # Option name
+            name_text = self.font.render(option["name"], True, (200, 200, 255))
+            self.screen.blit(name_text, (setup_panel_rect.x + 20, y_offset))
+            
+            # Value bar
+            bar_width = 200
+            bar_height = 20
+            bar_x = setup_panel_rect.x + 20
+            bar_y = y_offset + 30
+            
+            # Draw empty bar
+            pygame.draw.rect(self.screen, (50, 50, 80), (bar_x, bar_y, bar_width, bar_height))
+            
+            # Draw filled portion
+            fill_width = int(bar_width * (option["value"] / option["max"]))
+            pygame.draw.rect(self.screen, (100, 150, 250), (bar_x, bar_y, fill_width, bar_height))
+            
+            # Draw border
+            pygame.draw.rect(self.screen, (100, 100, 180), (bar_x, bar_y, bar_width, bar_height), 1)
+            
+            # Draw value text
+            value_text = self.font.render(f"{option['value']}/{option['max']}", True, WHITE)
+            self.screen.blit(value_text, (bar_x + bar_width + 20, bar_y))
+            
+            y_offset += option_height
+        
+        # Draw upgrades section (right panel)
+        upgrade_panel_width = 350
+        upgrade_panel_height = 500
+        upgrade_panel_rect = pygame.Rect(width - 50 - upgrade_panel_width, 180, upgrade_panel_width, upgrade_panel_height)
+        
+        # Draw panel background
+        s = pygame.Surface((upgrade_panel_width, upgrade_panel_height), pygame.SRCALPHA)
+        s.fill((20, 20, 50, 180))
+        self.screen.blit(s, upgrade_panel_rect)
+        pygame.draw.rect(self.screen, (100, 100, 200), upgrade_panel_rect, 2)
+        
+        # Upgrades title
+        upgrade_title = self.subtitle_font.render("UPGRADES", True, WHITE)
+        self.screen.blit(upgrade_title, (upgrade_panel_rect.centerx - upgrade_title.get_width()//2, upgrade_panel_rect.y + 20))
+        
+        # Placeholder for future upgrades
+        upgrade_message = ["Coming Soon!", "Spend points to upgrade your car", "and improve its performance."]
+        y_offset = upgrade_panel_rect.y + 80
+        
+        for line in upgrade_message:
+            text = self.font.render(line, True, (180, 180, 180))
+            self.screen.blit(text, (upgrade_panel_rect.centerx - text.get_width()//2, y_offset))
+            y_offset += 30
+        
+        # Draw "Start Race" button at the bottom
+        button_width = 300
+        button_height = 70
+        game.start_race_button_rect = pygame.Rect(
+            width//2 - button_width//2,
+            height - 120,
+            button_width,
+            button_height
+        )
+        
+        # Button background with pulsing effect
+        pulse = abs(math.sin(pygame.time.get_ticks() * 0.002)) * 50 + 100
+        button_bg_color = (0, 0, int(pulse))
+        pygame.draw.rect(self.screen, button_bg_color, game.start_race_button_rect)
+        pygame.draw.rect(self.screen, GREEN, game.start_race_button_rect, 3, border_radius=10)
+        
+        # Button text
+        button_text = "START RACE"
+        button_surface = self.subtitle_font.render(button_text, True, WHITE)
+        button_text_pos = (
+            game.start_race_button_rect.centerx - button_surface.get_width()//2,
+            game.start_race_button_rect.centery - button_surface.get_height()//2
+        )
+        self.screen.blit(button_surface, button_text_pos)

@@ -11,9 +11,10 @@ CAMERA_SMOOTHNESS = 0.1  # Lower = smoother but slower camera (between 0.01 and 
 
 # Game states
 STATE_START_SCREEN = 0
-STATE_RACING = 1
-STATE_PAUSE = 2
-STATE_RACE_END = 3  # New state for race end screen
+STATE_CUSTOMIZATION = 1  # New state for car customization screen
+STATE_RACING = 2
+STATE_PAUSE = 3
+STATE_RACE_END = 4  # New state for race end screen
 
 # Colors
 BLACK = (0, 0, 0)
