@@ -46,6 +46,9 @@ class Car:
         self.push_remaining = 0
         self.can_push = True
         
+        # Flag to identify cars controlled by the racing engineer
+        self.is_engineer_car = False
+        
         # Collision detection
         self.crashed = False
         self.recovery_timer = 0
@@ -224,6 +227,11 @@ class Car:
         half_width = self.width / 2
         half_height = self.height / 2
         
+        # Make engineer cars slightly larger for better visibility
+        if self.is_engineer_car:
+            half_width *= 1.2
+            half_height *= 1.2
+        
         # Calculate rotated corners with camera offset
         for xm, ym in [(-half_width, -half_height), 
                        (half_width, -half_height), 
@@ -236,13 +244,43 @@ class Car:
         # Fill the car with its color
         pygame.draw.polygon(surface, self.color, corners)
         
-        # Draw an outline for better visibility
-        pygame.draw.polygon(surface, (0, 0, 0), corners, 1)
+        # Draw an outline for better visibility - thicker for engineer cars
+        outline_thickness = 2 if self.is_engineer_car else 1
+        pygame.draw.polygon(surface, (0, 0, 0), corners, outline_thickness)
         
         # Draw a small line indicating the front of the car - ensure coordinates are integers
         front_x = int(screen_x + math.cos(math.radians(self.angle)) * 15)
         front_y = int(screen_y + math.sin(math.radians(self.angle)) * 15)
-        pygame.draw.line(surface, (0, 0, 0), (int(screen_x), int(screen_y)), (front_x, front_y), 2)
+        pygame.draw.line(surface, (0, 0, 0), (int(screen_x), int(screen_y)), (front_x, front_y), outline_thickness)
+        
+        # Add star indicators for engineer cars
+        if self.is_engineer_car:
+            # Draw a star above the car
+            star_radius = 8
+            star_y_offset = 20
+            star_points = []
+            
+            # Calculate position for star (above the car)
+            star_x = screen_x
+            star_y = screen_y - star_y_offset
+            
+            # Create a 5-pointed star
+            for i in range(5):
+                # Outer point
+                angle = math.radians(i * 72 - 90)  # Starting from the top point (-90 degrees)
+                px = star_x + math.cos(angle) * star_radius
+                py = star_y + math.sin(angle) * star_radius
+                star_points.append((px, py))
+                
+                # Inner point
+                angle = math.radians(i * 72 + 36 - 90)  # +36 degrees for inner points
+                px = star_x + math.cos(angle) * (star_radius * 0.4)  # Inner radius is 40% of outer
+                py = star_y + math.sin(angle) * (star_radius * 0.4)
+                star_points.append((px, py))
+            
+            # Draw the star in bright yellow
+            pygame.draw.polygon(surface, (255, 255, 0), star_points)
+            pygame.draw.polygon(surface, (0, 0, 0), star_points, 1)
         
     def get_status(self):
         """Return status text for display"""
