@@ -51,7 +51,7 @@ class Game:
         self.message_timer = 300
 
         # Race settings
-        self.MAX_LAPS = 10  # Race ends after 10 laps
+        self.MAX_LAPS = 5  # Race ends after 5 laps
         self.race_positions = []  # Will store current race positions
         self.final_positions = []  # Will store final race positions when race ends
         self.race_finished = False  # Flag to indicate if race has finished

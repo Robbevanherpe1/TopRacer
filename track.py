@@ -76,7 +76,7 @@ class Track:
         # would trace the racing line
         self.waypoints = [
             # Add start point
-            (start_x, start_y),
+            (start_x + 5, start_y - 1),#0
             
             # For now, hardcode some waypoints for the track in track1.csv
             # These should be adjusted based on the actual track layout
@@ -87,12 +87,29 @@ class Track:
             (start_x + 27, start_y + 10),#5
             (start_x + 31, start_y + 12),#6
             (start_x + 36, start_y + 10),#7
-            (start_x + 40, start_y),#8
-            (start_x + 35, start_y - 10),#9
-            (start_x + 30, start_y - 8),#10
-            (start_x + 25, start_y - 5),#11
-            (start_x + 20, start_y),#12
-            (start_x + 15, start_y),#13
+            (start_x + 40, start_y + 4),#8
+            (start_x + 40, start_y - 2),#9
+            (start_x + 35, start_y - 5),#10
+            (start_x + 30, start_y - 8),#11
+            (start_x + 25, start_y - 14),#12
+            (start_x + 24, start_y - 19),#13
+            (start_x + 20, start_y - 23),#14
+            (start_x + 12, start_y - 23),#15   
+            (start_x + 10, start_y - 28),#16
+            (start_x + 7, start_y - 31),#17
+            (start_x + 1, start_y - 33),#18
+            (start_x - 16, start_y - 33),#19
+            (start_x - 18, start_y - 30),#20
+            (start_x - 16, start_y - 27),#21
+            (start_x - 12, start_y - 25),#22
+            (start_x - 6, start_y - 24),#23
+            (start_x + 6, start_y - 16),#24
+            (start_x + 7, start_y - 12),#25
+            (start_x + 7, start_y - 7),#26
+            (start_x + 5, start_y - 5),#27
+            (start_x + 2, start_y - 6),#28
+            (start_x + 0, start_y - 3),#29  
+            (start_x + 1, start_y - 2),#30
         ]
         
         print(f"Defined {len(self.waypoints)} waypoints")
