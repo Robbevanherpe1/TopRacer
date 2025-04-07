@@ -20,6 +20,7 @@ CAMERA_SMOOTHNESS = 0.1  # Lower = smoother but slower camera (between 0.01 and 
 STATE_START_SCREEN = 0
 STATE_RACING = 1
 STATE_PAUSE = 2
+STATE_RACE_END = 3  # New state for race end screen
 
 # Colors
 BLACK = (0, 0, 0)
@@ -84,6 +85,12 @@ class Game:
         self.message = "Welcome to TopRacer! Press SPACE to start/pause. Arrow keys to select car. P to push."
         self.message_timer = 300
 
+        # Race settings
+        self.MAX_LAPS = 10  # Race ends after 10 laps
+        self.race_positions = []  # Will store current race positions
+        self.final_positions = []  # Will store final race positions when race ends
+        self.race_finished = False  # Flag to indicate if race has finished
+
         # Camera position
         self.camera_x = 0
         self.camera_y = 0
@@ -99,6 +106,9 @@ class Game:
         
         # Waypoint visibility toggle
         self.show_waypoints = False
+
+        # Button properties for end screen
+        self.menu_button_rect = pygame.Rect(0, 0, 200, 60)  # Will position later
         
     def handle_events(self):
         for event in pygame.event.get():
@@ -110,6 +120,15 @@ class Game:
                 global SCREEN_WIDTH, SCREEN_HEIGHT
                 SCREEN_WIDTH, SCREEN_HEIGHT = event.size
                 screen = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT), pygame.RESIZABLE)
+                
+            # Handle mouse clicks for the race end screen
+            if event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:  # Left mouse click
+                if self.state == STATE_RACE_END:
+                    # Check if Return to Main Menu button was clicked
+                    if self.menu_button_rect.collidepoint(event.pos):
+                        # Reset the race and go back to start screen
+                        self.reset_race()
+                        self.state = STATE_START_SCREEN
                 
             if event.type == pygame.KEYDOWN:
                 if event.key == pygame.K_SPACE:
@@ -126,14 +145,18 @@ class Game:
                         self.message = "Race resumed!"
                         self.message_timer = 180
                         
-                # Exit the game with Escape key
-                if event.key == pygame.K_ESCAPE and self.state != STATE_START_SCREEN:
-                    self.state = STATE_START_SCREEN
-                    self.message = "Returned to start screen!"
-                    self.message_timer = 180
+                # Also allow returning to menu from race end screen with Escape
+                if event.key == pygame.K_ESCAPE:
+                    if self.state == STATE_RACE_END:
+                        self.reset_race()
+                        self.state = STATE_START_SCREEN
+                    elif self.state != STATE_START_SCREEN:
+                        self.state = STATE_START_SCREEN
+                        self.message = "Returned to start screen!"
+                        self.message_timer = 180
                 
                 # Toggle waypoints visibility with W key
-                if event.key == pygame.K_w and self.state != STATE_START_SCREEN:
+                if event.key == pygame.K_w and self.state != STATE_START_SCREEN and self.state != STATE_RACE_END:
                     self.show_waypoints = not self.show_waypoints
                     if self.show_waypoints:
                         self.message = "Waypoints visible"
@@ -167,7 +190,7 @@ class Game:
                         self.message_timer = 120
                     
                 # Engineer commands
-                if event.key == pygame.K_p:
+                if event.key == pygame.K_p and self.state == STATE_RACING:
                     selected_car = self.cars[self.selected_car_index]
                     response = selected_car.toggle_push_mode()
                     self.message = response
@@ -192,6 +215,9 @@ class Game:
             target_y = selected_car.y - SCREEN_HEIGHT // 2
             self.camera_x += (target_x - self.camera_x) * CAMERA_SMOOTHNESS
             self.camera_y += (target_y - self.camera_y) * CAMERA_SMOOTHNESS
+            
+            # Update race positions
+            self.update_race_positions()
         
         if self.state == STATE_START_SCREEN:
             self.update_start_screen_animation()
@@ -202,6 +228,8 @@ class Game:
         
         if self.state == STATE_START_SCREEN:
             self.draw_start_screen()
+        elif self.state == STATE_RACE_END:
+            self.draw_race_end_screen()
         else:
             # Draw the track
             self.track.draw(screen, self.camera_x, self.camera_y)
@@ -222,6 +250,9 @@ class Game:
             
             # Draw UI
             self.draw_ui()
+            
+            # Draw race positions overlay
+            self.draw_position_overlay()
         
         # Update the display
         pygame.display.flip()
@@ -454,6 +485,269 @@ class Game:
             # Draw the car
             pygame.draw.polygon(screen, color, corners)
             pygame.draw.polygon(screen, BLACK, corners, 1)
+            
+    def update_race_positions(self):
+        """Calculate current race positions based on laps completed and distance to next waypoint"""
+        # Create a list of (car_index, score) tuples where higher score = better position
+        # Score is primarily based on laps, secondarily on waypoint progress
+        positions_data = []
+        
+        total_waypoints = len(self.track.waypoints)
+        
+        for i, car in enumerate(self.cars):
+            # Calculate a score based on laps completed and current waypoint progress
+            # This ensures correct ordering even when cars are on different parts of track
+            waypoint_score = (total_waypoints - car.current_waypoint) / total_waypoints
+            score = car.laps + waypoint_score
+            
+            positions_data.append((i, score))
+        
+        # Sort by score in descending order (higher score = better position)
+        positions_data.sort(key=lambda x: x[1], reverse=True)
+        
+        # Extract just the car indices in order of position
+        self.race_positions = [idx for idx, _ in positions_data]
+        
+        # Check if any car has completed all laps
+        for car in self.cars:
+            if car.laps >= self.MAX_LAPS and not self.race_finished:
+                self.race_finished = True
+                self.final_positions = self.race_positions.copy()
+                self.state = STATE_RACE_END
+                break
+
+    def draw_position_overlay(self):
+        """Draw a nice overlay on the left side of the screen showing race positions"""
+        if not self.race_positions:  # Initialize positions if empty
+            self.race_positions = list(range(len(self.cars)))
+        
+        # Draw a semi-transparent background panel for the position display
+        panel_width = 220
+        panel_height = len(self.cars) * 40 + 60  # Extra space for title
+        panel_rect = pygame.Rect(20, 120, panel_width, panel_height)
+        
+        # Create a semi-transparent surface
+        s = pygame.Surface((panel_width, panel_height), pygame.SRCALPHA)
+        s.fill((20, 20, 50, 180))  # Dark blue with transparency
+        screen.blit(s, panel_rect)
+        
+        # Draw border
+        pygame.draw.rect(screen, (100, 100, 200), panel_rect, 2)
+        
+        # Draw the "RACE POSITIONS" title
+        title_font = pygame.font.SysFont(None, 30)
+        title = title_font.render("RACE POSITIONS", True, (220, 220, 255))
+        screen.blit(title, (panel_rect.centerx - title.get_width() // 2, panel_rect.y + 10))
+        
+        # Draw lap counter
+        lap_text = f"LAP {min(max([car.laps for car in self.cars]) + 1, self.MAX_LAPS)} / {self.MAX_LAPS}"
+        lap_font = pygame.font.SysFont(None, 24)
+        lap_surface = lap_font.render(lap_text, True, (180, 180, 255))
+        screen.blit(lap_surface, (panel_rect.centerx - lap_surface.get_width() // 2, panel_rect.y + 35))
+        
+        # Draw divider line
+        pygame.draw.line(screen, (100, 100, 200), 
+                        (panel_rect.left + 10, panel_rect.y + 55), 
+                        (panel_rect.right - 10, panel_rect.y + 55), 2)
+        
+        # For each car in race positions, draw its position
+        position_font = pygame.font.SysFont(None, 26)
+        for i, car_idx in enumerate(self.race_positions):
+            car = self.cars[car_idx]
+            position = i + 1
+            
+            # Calculate y position for this entry
+            y_pos = panel_rect.y + 65 + i * 40
+            
+            # Determine row color - engineer cars (your teams) get brighter rows
+            if car_idx in self.engineer_car_indices:
+                row_color = (60, 60, 90, 180)  # Brighter background for your teams
+                text_color = (255, 255, 255)   # Brighter text
+            else:
+                row_color = (40, 40, 70, 150)  # Darker background for AI teams
+                text_color = (180, 180, 180)   # Darker text
+                
+            # Draw row background
+            row_rect = pygame.Rect(panel_rect.x + 5, y_pos, panel_width - 10, 32)
+            s = pygame.Surface((row_rect.width, row_rect.height), pygame.SRCALPHA)
+            s.fill(row_color)
+            screen.blit(s, row_rect)
+            
+            # Draw position number in a circle
+            circle_x = panel_rect.x + 25
+            circle_y = y_pos + 16
+            circle_radius = 13
+            pygame.draw.circle(screen, car.color, (circle_x, circle_y), circle_radius)
+            pygame.draw.circle(screen, (30, 30, 30), (circle_x, circle_y), circle_radius, 1)
+            
+            # Draw position number
+            pos_text = position_font.render(str(position), True, (30, 30, 30))
+            pos_rect = pos_text.get_rect(center=(circle_x, circle_y))
+            screen.blit(pos_text, pos_rect)
+            
+            # Draw car name
+            name_text = position_font.render(car.name, True, text_color)
+            screen.blit(name_text, (circle_x + 20, y_pos + 8))
+            
+            # Draw lap info
+            lap_info = f"Lap {car.laps + 1}"
+            if car.best_lap is not None:
+                lap_info += f" | {car.best_lap:.2f}s"
+            lap_text = pygame.font.SysFont(None, 20).render(lap_info, True, text_color)
+            screen.blit(lap_text, (circle_x + 20, y_pos + 25 - lap_text.get_height() // 2))
+
+    def draw_race_end_screen(self):
+        """Draw the race end screen showing final positions and a button to return to main menu"""
+        # First draw a nice background
+        self.draw_background_animation()
+        
+        # Create semi-transparent overlay for better text visibility
+        overlay = pygame.Surface((SCREEN_WIDTH, SCREEN_HEIGHT), pygame.SRCALPHA)
+        overlay.fill((0, 0, 30, 180))  # Dark blue with alpha
+        screen.blit(overlay, (0, 0))
+        
+        # Draw race results title
+        title_text = "RACE COMPLETE!"
+        title_surface = title_font.render(title_text, True, WHITE)
+        screen.blit(title_surface, (SCREEN_WIDTH//2 - title_surface.get_width()//2, 50))
+        
+        # Draw final standings
+        subtitle_text = "FINAL STANDINGS"
+        subtitle_surface = subtitle_font.render(subtitle_text, True, CYAN)
+        screen.blit(subtitle_surface, (SCREEN_WIDTH//2 - subtitle_surface.get_width()//2, 130))
+        
+        # Create a results panel in the center
+        panel_width = 500
+        panel_height = len(self.cars) * 50 + 60
+        panel_rect = pygame.Rect(SCREEN_WIDTH//2 - panel_width//2, 180, panel_width, panel_height)
+        
+        # Draw panel background
+        s = pygame.Surface((panel_width, panel_height), pygame.SRCALPHA)
+        s.fill((20, 20, 60, 200))
+        screen.blit(s, panel_rect)
+        pygame.draw.rect(screen, (100, 100, 220), panel_rect, 2)
+        
+        # Draw each position in the final results
+        position_font = pygame.font.SysFont(None, 36)
+        detail_font = pygame.font.SysFont(None, 24)
+        
+        for i, car_idx in enumerate(self.final_positions):
+            car = self.cars[car_idx]
+            position = i + 1
+            
+            # Calculate y position for this entry
+            y_pos = panel_rect.y + 30 + i * 50
+            
+            # Determine trophy for top 3
+            trophy = ""
+            trophy_color = WHITE
+            if position == 1:
+                trophy = "🏆 "  # Gold trophy
+                trophy_color = YELLOW
+            elif position == 2:
+                trophy = "🥈 "  # Silver medal
+                trophy_color = (200, 200, 200)  # Silver
+            elif position == 3:
+                trophy = "🥉 "  # Bronze medal
+                trophy_color = (205, 127, 50)  # Bronze
+                
+            # Highlight engineer cars with brighter text
+            if car_idx in self.engineer_car_indices:
+                name_color = WHITE
+                detail_color = (200, 200, 255)
+                # Draw a slightly lighter background for engineer cars
+                highlight_rect = pygame.Rect(panel_rect.x + 10, y_pos - 5, panel_width - 20, 40)
+                pygame.draw.rect(screen, (40, 40, 90, 180), highlight_rect)
+                pygame.draw.rect(screen, (80, 80, 160), highlight_rect, 1)
+            else:
+                name_color = (180, 180, 180)
+                detail_color = (150, 150, 150)
+            
+            # Draw position number
+            pos_text = f"{position}."
+            pos_surface = position_font.render(pos_text, True, trophy_color)
+            screen.blit(pos_surface, (panel_rect.x + 30, y_pos))
+            
+            # Draw trophy for top 3
+            if trophy:
+                trophy_surface = pygame.font.SysFont(None, 40).render(trophy, True, trophy_color)
+                screen.blit(trophy_surface, (panel_rect.x + 60, y_pos - 5))
+                name_offset = 100  # More space when trophy is present
+            else:
+                name_offset = 70
+            
+            # Draw car name - make engineer cars brighter
+            name_text = f"{car.name}"
+            name_surface = position_font.render(name_text, True, name_color)
+            screen.blit(name_surface, (panel_rect.x + name_offset, y_pos))
+            
+            # Draw best lap time
+            if car.best_lap is not None:
+                time_text = f"Best Lap: {car.best_lap:.2f}s"
+                time_surface = detail_font.render(time_text, True, detail_color)
+                screen.blit(time_surface, (panel_rect.x + name_offset, y_pos + 30))
+        
+        # Draw "Return to Main Menu" button
+        self.menu_button_rect = pygame.Rect(SCREEN_WIDTH//2 - 150, panel_rect.bottom + 40, 300, 60)
+        
+        # Button background with pulsing effect
+        pulse = abs(math.sin(pygame.time.get_ticks() * 0.002)) * 50 + 100
+        button_bg_color = (0, 0, int(pulse))
+        pygame.draw.rect(screen, button_bg_color, self.menu_button_rect)
+        pygame.draw.rect(screen, CYAN, self.menu_button_rect, 2, border_radius=10)
+        
+        # Button text
+        button_text = "Return to Main Menu"
+        button_surface = subtitle_font.render(button_text, True, WHITE)
+        button_text_pos = (self.menu_button_rect.centerx - button_surface.get_width()//2, 
+                          self.menu_button_rect.centery - button_surface.get_height()//2)
+        screen.blit(button_surface, button_text_pos)
+
+    def reset_race(self):
+        """Reset race state to prepare for a new race"""
+        # Reset race time
+        self.race_time = 0
+        
+        # Reset race positions
+        self.race_positions = []
+        self.final_positions = []
+        self.race_finished = False
+        
+        # Reset all cars to starting position
+        for car in self.cars:
+            # Reset position
+            car.x, car.y = self.track.get_start_position()
+            # Add small random offset to avoid collision at start
+            car.x += random.randint(-5, 5)
+            car.y += random.randint(-5, 5)
+            
+            # Reset direction
+            car.initialize_car_direction()
+            
+            # Reset racing properties
+            car.current_waypoint = 0
+            car.laps = 0
+            car.speed = 0
+            car.crashed = False
+            car.recovery_timer = 0
+            car.push_mode = False
+            car.push_remaining = 0
+            
+            # Keep track of best lap from previous race
+            # car.lap_times = []  # Uncomment to reset lap history
+            # car.best_lap = None  # Uncomment to reset best lap
+            
+            # Reset lap timing
+            car.last_lap_time = 0
+            car.lap_start_time = pygame.time.get_ticks()
+            
+        # Reset camera position
+        self.camera_x = 0
+        self.camera_y = 0
+        
+        # Display message
+        self.message = "Race reset! Press SPACE to start a new race."
+        self.message_timer = 180
 
 if __name__ == "__main__":
     try:
