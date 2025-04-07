@@ -13,50 +13,6 @@ class UI:
 
     def draw_ui(self, game):
         width, height = self.screen.get_size()
-        # Draw status of all cars, with engineer cars displayed more prominently
-        y_offset = 100
-        x_offset = width - 330  # Start from the right side of the screen
-        
-        # First section title for engineer cars
-        header = "YOUR RACING TEAMS:"
-        header_surface = self.font.render(header, True, (255, 255, 100))  # Bright yellow
-        self.screen.blit(header_surface, (x_offset, y_offset))
-        y_offset += 25
-        
-        # Draw engineer cars first
-        for i in game.engineer_car_indices:
-            car = game.cars[i]
-            status_text = car.get_status()
-            
-            # Highlight selected car
-            if i == game.selected_car_index:
-                status_text = "> " + status_text + " ★"
-                color = WHITE
-            else:
-                # Add a star symbol to indicate engineer cars
-                status_text = "  " + status_text + " ★"
-                color = car.color
-                
-            status_surface = self.font.render(status_text, True, color)
-            self.screen.blit(status_surface, (x_offset, y_offset))
-            y_offset += 25
-            
-        # Add a separator and title for other cars    
-        y_offset += 10
-        header = "OTHER COMPETITORS:"
-        header_surface = self.font.render(header, True, (150, 150, 150))  # Gray
-        self.screen.blit(header_surface, (x_offset, y_offset))
-        y_offset += 25
-        
-        # Draw non-engineer cars
-        for i, car in enumerate(game.cars):
-            if i not in game.engineer_car_indices:
-                status_text = car.get_status()
-                color = (120, 120, 120)  # Dimmed color for AI cars
-                
-                status_surface = self.font.render(status_text, True, color)
-                self.screen.blit(status_surface, (x_offset, y_offset))
-                y_offset += 25
         
         # Draw race time
         minutes = game.race_time // (60 * 60)
@@ -128,8 +84,11 @@ class UI:
             # Calculate y position for this entry
             y_pos = panel_rect.y + 65 + i * 40
             
-            # Determine row color - engineer cars (your teams) get brighter rows
-            if car_idx in game.engineer_car_indices:
+            # Highlight any selected car
+            if car_idx == game.selected_car_index:
+                row_color = (80, 80, 120, 180)  # Distinct background for selected car
+                text_color = (255, 255, 0)      # Brighter text
+            elif car_idx in game.engineer_car_indices:
                 row_color = (60, 60, 90, 180)  # Brighter background for your teams
                 text_color = (255, 255, 255)   # Brighter text
             else:
@@ -158,10 +117,12 @@ class UI:
             name_text = position_font.render(car.name, True, text_color)
             self.screen.blit(name_text, (circle_x + 20, y_pos + 8))
             
-            # Draw lap info
+            # Show last lap and best lap
             lap_info = f"Lap {car.laps + 1}"
+            if car.last_lap_time > 0:
+                lap_info += f" | Last: {car.last_lap_time:.2f}s" 
             if car.best_lap is not None:
-                lap_info += f" | {car.best_lap:.2f}s"
+                lap_info += f" | Best: {car.best_lap:.2f}s"
             lap_text = pygame.font.SysFont(None, 20).render(lap_info, True, text_color)
             self.screen.blit(lap_text, (circle_x + 20, y_pos + 25 - lap_text.get_height() // 2))
 
