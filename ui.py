@@ -48,7 +48,7 @@ class UI:
         
         # Draw a semi-transparent background panel for the position display
         panel_width = 260
-        panel_height = len(game.cars) * 40 + 80  # Extra space for title
+        panel_height = len(game.cars) * 60 + 80  # Increased block height
         panel_rect = pygame.Rect(20, 20, panel_width, panel_height)  # Moved to top left
         
         # Create a semi-transparent surface
@@ -82,7 +82,7 @@ class UI:
             position = i + 1
             
             # Calculate y position for this entry
-            y_pos = panel_rect.y + 65 + i * 40
+            y_pos = panel_rect.y + 65 + i * 60  # Adjusted y position
             
             # Highlight any selected car
             if car_idx == game.selected_car_index:
@@ -96,7 +96,7 @@ class UI:
                 text_color = (180, 180, 180)   # Darker text
                 
             # Draw row background
-            row_rect = pygame.Rect(panel_rect.x + 5, y_pos, panel_width - 10, 32)
+            row_rect = pygame.Rect(panel_rect.x + 5, y_pos, panel_width - 10, 50)  # Adjusted row height
             s = pygame.Surface((row_rect.width, row_rect.height), pygame.SRCALPHA)
             s.fill(row_color)
             self.screen.blit(s, row_rect)
@@ -115,7 +115,7 @@ class UI:
             
             # Draw car name
             name_text = position_font.render(car.name, True, text_color)
-            self.screen.blit(name_text, (circle_x + 20, y_pos + 8))
+            self.screen.blit(name_text, (circle_x + 20, y_pos + 5))  # Adjusted y position
             
             # Show last lap and best lap
             lap_info = f"Lap {car.laps + 1}"
@@ -124,7 +124,7 @@ class UI:
             if car.best_lap is not None:
                 lap_info += f" | Best: {car.best_lap:.2f}s"
             lap_text = pygame.font.SysFont(None, 20).render(lap_info, True, text_color)
-            self.screen.blit(lap_text, (circle_x + 20, y_pos + 25 - lap_text.get_height() // 2))
+            self.screen.blit(lap_text, (circle_x + 20, y_pos + 28))  # Adjusted y position
 
     def draw_start_screen(self, game, animation):
         width, height = self.screen.get_size()
