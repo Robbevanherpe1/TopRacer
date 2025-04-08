@@ -25,10 +25,11 @@ class CustomizationUI(BaseUI):
         pygame.draw.line(self.screen, (100, 100, 200), (0, header_height), (width, header_height), 2)
         
         # Draw profile section (left side of header)
-        # Mock profile picture
-        profile_rect = pygame.Rect(20, 10, 60, 60)
-        pygame.draw.rect(self.screen, (100, 100, 180), profile_rect)
-        pygame.draw.rect(self.screen, WHITE, profile_rect, 2)
+        # Profile picture
+
+        profile_image = pygame.image.load("assets/helmet.png")
+        profile_image = pygame.transform.scale(profile_image, (60, 60))
+        self.screen.blit(profile_image, (20, 10))
         
         # Username and race wins
         username = game.player_username  # Now using game's player_username
@@ -62,8 +63,8 @@ class CustomizationUI(BaseUI):
         
         # Draw car preview (simple visualization)
         car = game.cars[game.selected_car_index]
-        car_rect_width = 200
-        car_rect_height = 100
+        car_rect_width = 300
+        car_rect_height = 300
         car_rect = pygame.Rect(
             preview_rect.centerx - car_rect_width//2,
             preview_rect.centery - car_rect_height//2,
@@ -75,7 +76,7 @@ class CustomizationUI(BaseUI):
         # Removed wheel drawing
         if car.sprite:
             # Draw the sprite instead of the rectangle
-            scaled_sprite = pygame.transform.scale(car.sprite, (120, 160))
+            scaled_sprite = pygame.transform.scale(car.sprite, (car_rect_width, car_rect_height))
             rect = scaled_sprite.get_rect(center=car_rect.center)
             self.screen.blit(scaled_sprite, rect)
         

@@ -13,13 +13,11 @@ class StartScreenUI(BaseUI):
         
         title = "TopRacer"
         subtitle = "Racing Management Game"
-        instructions = "Select your team or create a new one"
         extra_info = "ESC - Exit | SPACE - Continue with selected team"
         version = "v1.1"
         
         title_surface = self.title_font.render(title, True, WHITE)
         subtitle_surface = self.subtitle_font.render(subtitle, True, CYAN)
-        instructions_surface = self.subtitle_font.render(instructions, True, WHITE)
         info_surface = self.font.render(extra_info, True, (180, 180, 180))
         version_surface = self.font.render(version, True, (100, 100, 100))
         
@@ -34,16 +32,13 @@ class StartScreenUI(BaseUI):
         
         # Draw subtitle
         self.screen.blit(subtitle_surface, (width//2 - subtitle_surface.get_width()//2, 
-                                          height//4 + 80))
+                                          height//4 + 90))
         
         # Draw the player selection area
         self._draw_player_selection_panel(game, width, height)
         
-        # Draw instructions and additional info
-        self.screen.blit(instructions_surface, (width//2 - instructions_surface.get_width()//2, 
-                                            height - 120))
         self.screen.blit(info_surface, (width//2 - info_surface.get_width()//2, 
-                                    height - 80))
+                                    height - 90))
         
         # Draw version in bottom right
         self.screen.blit(version_surface, (width - version_surface.get_width() - 10, 
@@ -95,14 +90,14 @@ class StartScreenUI(BaseUI):
             
             # Player name
             player_text = self.font.render(player_name, True, text_color)
-            self.screen.blit(player_text, (button_rect.x + 15, button_rect.centery - player_text.get_height()//2))
+            self.screen.blit(player_text, (button_rect.x + 15, button_rect.centery - player_text.get_height()//2 -5))
             
             # Player stats
             if player_name in game.players:
                 stats = game.players[player_name]
                 stats_text = f"Points: {stats['points']} | Rating: {stats['team_rating']} | Wins: {stats['races_won']}"
                 stats_surface = pygame.font.Font(None, 20).render(stats_text, True, (180, 180, 220))
-                self.screen.blit(stats_surface, (button_rect.x + 15, button_rect.centery + 10))
+                self.screen.blit(stats_surface, (button_rect.x + 15, button_rect.centery + 7))
             
             # Delete button
             delete_rect = pygame.Rect(button_rect.right + button_margin, player_y, 60, player_height)
@@ -122,7 +117,7 @@ class StartScreenUI(BaseUI):
         """Draw the 'Add New Team' button"""
         game.add_player_button_rect = pygame.Rect(
             panel_rect.centerx - 100, 
-            panel_rect.bottom - 60,
+            panel_rect.bottom - 85,
             200, 40
         )
         
