@@ -447,7 +447,7 @@ class CustomizationUI(BaseUI):
         button_bg_color = (0, int(pulse * 0.7), int(pulse)) if button_hovered else (0, 0, int(pulse))
         button_border_color = BLUE if not button_hovered else (0, 0, 240)
         button_text_color = WHITE
-        pygame.draw.rect(self.screen, button_bg_color, game.manufacturer_button_rect)
+        pygame.draw.rect(self.screen, button_bg_color, game.manufacturer_button_rect,border_radius=10)
         pygame.draw.rect(self.screen, button_border_color, game.manufacturer_button_rect, 3, border_radius=10)
         # Button text
         button_text = "SELECT MANUFACTURER"
@@ -491,7 +491,7 @@ class CustomizationUI(BaseUI):
             button_text_color = (180, 180, 180)
             game.race_button_enabled = False
             
-        pygame.draw.rect(self.screen, button_bg_color, game.start_race_button_rect)
+        pygame.draw.rect(self.screen, button_bg_color, game.start_race_button_rect,border_radius=10)
         pygame.draw.rect(self.screen, button_border_color, game.start_race_button_rect, 3, border_radius=10)
         
         # Button text
