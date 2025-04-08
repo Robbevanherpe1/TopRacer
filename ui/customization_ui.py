@@ -38,6 +38,20 @@ class CustomizationUI(BaseUI):
         wins_text = self.font.render(f"Races won: {race_wins}", True, (200, 200, 200))
         self.screen.blit(username_text, (100, 15))
         self.screen.blit(wins_text, (100, 50))
+
+        #Team manufacturer
+        #team_manufacturer = game.player_team_manufacturer 
+        #team_manufacturer_text = self.font.render(f"Team: {team_manufacturer}", True, (200, 200, 200))
+
+        team_manufacturer_text = self.font.render(f"Manufacturer: ferrari", True, (200, 200, 200))
+        self.screen.blit(team_manufacturer_text, (width//2 - team_manufacturer_text.get_width() + 50, 15))
+
+        #current garage
+        #current_garage = game.player_current_garage
+        #current_garage_text = self.font.render(f"Current Garage: {current_garage}", True, (200, 200, 200))
+
+        current_garage_text = self.font.render(f"Garage: 1", True, (200, 200, 200))
+        self.screen.blit(current_garage_text, (width//2 - current_garage_text.get_width(), 50))
         
         # Points and team rating (right side of header)
         points = game.player_points  # Now using game's player_points
