@@ -4,6 +4,7 @@ import math
 from track import Track
 from car import Car
 from constants import *
+from player_data import load_players, update_player_stats
 
 class Game:
     def __init__(self, screen):
@@ -95,6 +96,49 @@ class Game:
         self.base_upgrade_cost = 100
         self.upgrade_buttons = {}
         
+        # Player account management
+        self.players = load_players()
+        self.available_player_names = list(self.players.keys())
+        self.player_name = self.available_player_names[0] if self.available_player_names else "Team Alpha Racing"
+        
+        # Load player stats if available
+        if self.player_name in self.players:
+            self.player_points = self.players[self.player_name]["points"]
+            self.player_team_rating = self.players[self.player_name]["team_rating"]
+            self.player_races_won = self.players[self.player_name]["races_won"]
+        
+        # Account management in start screen
+        self.adding_new_player = False
+        self.new_player_name = ""
+        self.selected_player_index = 0 if self.available_player_names else -1
+        
+        # Input field for new player
+        self.input_active = False
+        self.input_rect = pygame.Rect(0, 0, 300, 50)  # Will position later
+        
+        # Player management buttons
+        self.player_buttons = []  # Will contain rects for each player (select/delete)
+        self.add_player_button_rect = pygame.Rect(0, 0, 200, 50)  # Will position later
+        self.delete_buttons = []  # Will contain rects for delete buttons
+        
+    def save_current_player_stats(self):
+        """Save the current player's stats to file"""
+        update_player_stats(
+            self.player_name,
+            self.player_points,
+            self.player_team_rating,
+            self.player_races_won
+        )
+    
+    def select_player(self, name):
+        """Select a player and load their stats"""
+        if name in self.players:
+            self.player_name = name
+            self.player_points = self.players[name]["points"]
+            self.player_team_rating = self.players[name]["team_rating"]
+            self.player_races_won = self.players[name]["races_won"]
+            self.player_username = name  # Use player name as username
+    
     def process_events(self, events):
         """Process pygame events passed from the main loop"""
         for event in events:
@@ -211,6 +255,57 @@ class Game:
                     response = selected_car.toggle_push_mode()
                     self.message = response
                     self.message_timer = 180
+            
+            # Handle text input for new player name
+            if self.adding_new_player and self.input_active:
+                if event.type == pygame.KEYDOWN:
+                    if event.key == pygame.K_RETURN:
+                        from player_data import add_player
+                        if self.new_player_name.strip():
+                            add_player(self.new_player_name)
+                            self.players = load_players()
+                            self.available_player_names = list(self.players.keys())
+                            self.select_player(self.new_player_name)
+                            self.adding_new_player = False
+                            self.new_player_name = ""
+                            self.input_active = False
+                    elif event.key == pygame.K_BACKSPACE:
+                        self.new_player_name = self.new_player_name[:-1]
+                    else:
+                        # Limit name length to prevent UI issues
+                        if len(self.new_player_name) < 20:
+                            self.new_player_name += event.unicode
+            
+            # Handle mouse clicks for player selection, adding, and deletion
+            if event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:  # Left mouse click
+                if self.state == STATE_START_SCREEN:
+                    mouse_pos = pygame.mouse.get_pos()
+                    
+                    # Check if clicked on Add Player button
+                    if self.add_player_button_rect.collidepoint(mouse_pos):
+                        self.adding_new_player = True
+                        self.input_active = True
+                    
+                    # Check if clicked on player selection
+                    for i, button_rect in enumerate(self.player_buttons):
+                        if i < len(self.available_player_names) and button_rect.collidepoint(mouse_pos):
+                            self.select_player(self.available_player_names[i])
+                            self.selected_player_index = i
+                    
+                    # Check if clicked on delete button
+                    for i, button_rect in enumerate(self.delete_buttons):
+                        if i < len(self.available_player_names) and button_rect.collidepoint(mouse_pos):
+                            from player_data import delete_player
+                            delete_player(self.available_player_names[i])
+                            self.players = load_players()
+                            self.available_player_names = list(self.players.keys())
+                            if not self.available_player_names:
+                                from player_data import add_player
+                                add_player("Team Alpha Racing")
+                                self.players = load_players()
+                                self.available_player_names = list(self.players.keys())
+                            self.select_player(self.available_player_names[0])
+                            self.selected_player_index = 0
     
     # Keep the original handle_events for backward compatibility but make it call process_events
     def handle_events(self):
@@ -239,6 +334,10 @@ class Game:
             
             # Update race positions
             self.update_race_positions()
+        
+        # At the end of update, save player stats if needed
+        if self.state == STATE_RACE_END:
+            self.save_current_player_stats()
 
     def update_race_positions(self):
         """Calculate current race positions based on laps completed and distance to next waypoint"""

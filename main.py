@@ -79,71 +79,80 @@ def main():
     # Add keybinding for toggling collision debug visualization
     collision_debug = False
     
-    # Main game loop
-    while game.running:
-        # Collect all events once
-        events = pygame.event.get()
-        
-        # Process events locally first for direct controls
-        for event in events:
-            if event.type == pygame.QUIT:
-                game.running = False
-            elif event.type == pygame.KEYDOWN:
-                # Modify debugging keybindings
-                if event.key == pygame.K_c:  # 'C' key toggles collision debug
-                    collision_debug = not collision_debug
-                    game.track.debug_collisions = [] if collision_debug else None
-                
-                # Handle other keys that need to be processed immediately
-                if event.key == pygame.K_ESCAPE:
-                    game.running = False
-        
-        # Send events to the game for handling game-specific logic
-        game.process_events(events)
-        
-        # Update game state based on current game state
-        if game.state == STATE_RACING:
-            game.update()
-        elif game.state == STATE_START_SCREEN:
-            animation.update_start_screen_animation()
-        
-        # Clear screen
-        screen.fill(BLACK)
-        
-        # Draw current game state
-        if game.state == STATE_START_SCREEN:
-            ui.draw_start_screen(game, animation)
-        elif game.state == STATE_CUSTOMIZATION:
-            ui.draw_customization_screen(game)
-        elif game.state == STATE_RACE_END:
-            ui.draw_race_end_screen(game, animation)
-        else:
-            # Draw the track
-            game.track.draw(screen, game.camera_x, game.camera_y)
-            
-            # Draw waypoints if enabled
-            if game.show_waypoints:
-                game.track.draw_waypoints(screen, game.camera_x, game.camera_y)
-            
-            # Draw all cars
-            for i, car in enumerate(game.cars):
-                car.draw(screen, game.camera_x, game.camera_y)
-            
-            # Draw UI components
-            ui.draw_ui(game)
-            ui.draw_position_overlay(game)
-        
-        # Update the display
-        pygame.display.flip()
-        
-        # Cap the frame rate
-        clock.tick(FPS)
-
-if __name__ == "__main__":
     try:
-        main()
+        # Main game loop
+        while game.running:
+            # Collect all events once
+            events = pygame.event.get()
+            
+            # Process events locally first for direct controls
+            for event in events:
+                if event.type == pygame.QUIT:
+                    game.running = False
+                elif event.type == pygame.KEYDOWN:
+                    # Modify debugging keybindings
+                    if event.key == pygame.K_c:  # 'C' key toggles collision debug
+                        collision_debug = not collision_debug
+                        game.track.debug_collisions = [] if collision_debug else None
+                    
+                    # Handle other keys that need to be processed immediately
+                    if event.key == pygame.K_ESCAPE:
+                        game.running = False
+            
+            # Send events to the game for handling game-specific logic
+            game.process_events(events)
+            
+            # Update game state based on current game state
+            if game.state == STATE_RACING:
+                game.update()
+            elif game.state == STATE_START_SCREEN:
+                animation.update_start_screen_animation()
+            
+            # Clear screen
+            screen.fill(BLACK)
+            
+            # Draw current game state
+            if game.state == STATE_START_SCREEN:
+                ui.draw_start_screen(game, animation)
+            elif game.state == STATE_CUSTOMIZATION:
+                ui.draw_customization_screen(game)
+            elif game.state == STATE_RACE_END:
+                ui.draw_race_end_screen(game, animation)
+            else:
+                # Draw the track
+                game.track.draw(screen, game.camera_x, game.camera_y)
+                
+                # Draw waypoints if enabled
+                if game.show_waypoints:
+                    game.track.draw_waypoints(screen, game.camera_x, game.camera_y)
+                
+                # Draw all cars
+                for i, car in enumerate(game.cars):
+                    car.draw(screen, game.camera_x, game.camera_y)
+                
+                # Draw UI components
+                ui.draw_ui(game)
+                ui.draw_position_overlay(game)
+            
+            # Update the display
+            pygame.display.flip()
+            
+            # Cap the frame rate
+            clock.tick(FPS)
+        
+        # Save player data when exiting normally
+        game.save_current_player_stats()
+        
     except Exception as e:
         print(f"Error: {e}")
     finally:
+        # Always try to save data even on crash
+        try:
+            game.save_current_player_stats()
+        except:
+            pass
         pygame.quit()
         sys.exit()
+
+if __name__ == "__main__":
+    main()
