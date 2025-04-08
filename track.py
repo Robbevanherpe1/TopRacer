@@ -16,7 +16,7 @@ CAR_SPAWN = 9  # This is the same as finish line in the map
 CAR_SPAWN_POINT = 10  # New constant for actual car spawn points
 
 class Track:
-    def __init__(self, csv_path='tracks/track1.csv'):
+    def __init__(self, csv_path='tracks/track1_2.csv'):
         self.tile_size = 40  # Increased from 30 to 40
         self.load_from_csv(csv_path)
         self.define_waypoints()
@@ -94,12 +94,12 @@ class Track:
             (start_x + 36, start_y + 10),#7
             (start_x + 40, start_y + 4),#8
             (start_x + 40, start_y - 2),#9
-            (start_x + 35, start_y - 5),#10
-            (start_x + 30, start_y - 8),#11
-            (start_x + 25, start_y - 14),#12
+            (start_x + 35, start_y - 7),#10
+            (start_x + 30, start_y - 10),#11
+            (start_x + 26, start_y - 14),#12
             (start_x + 24, start_y - 19),#13
             (start_x + 20, start_y - 23),#14
-            (start_x + 12, start_y - 23),#15   
+            (start_x + 13, start_y - 23),#15   
             (start_x + 10, start_y - 28),#16
             (start_x + 7, start_y - 31),#17
             (start_x + 1, start_y - 33),#18
@@ -108,11 +108,11 @@ class Track:
             (start_x - 16, start_y - 27),#21
             (start_x - 12, start_y - 25),#22
             (start_x - 6, start_y - 24),#23
-            (start_x + 6, start_y - 16),#24
+            (start_x + 7, start_y - 16),#24
             (start_x + 7, start_y - 12),#25
             (start_x + 7, start_y - 7),#26
             (start_x + 5, start_y - 5),#27
-            (start_x + 2, start_y - 6),#28
+            (start_x, start_y - 6),#28
             (start_x + 0, start_y - 3),#29  
             (start_x + 3, start_y - 1),#30
         ]
