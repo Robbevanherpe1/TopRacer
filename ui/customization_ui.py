@@ -39,6 +39,8 @@ class CustomizationUI(BaseUI):
         self.screen.blit(username_text, (100, 15))
         self.screen.blit(wins_text, (100, 50))
 
+
+
         #Team manufacturer
         #team_manufacturer = game.player_team_manufacturer 
         #team_manufacturer_text = self.font.render(f"Team: {team_manufacturer}", True, (200, 200, 200))
@@ -259,6 +261,9 @@ class CustomizationUI(BaseUI):
         
         # Draw "Start Race" button at the bottom - disable if in active race
         self._draw_race_button(game, width, height, all_cars_balanced, in_active_race)
+
+        # Draw manufacturer selector button
+        self._draw_manufacturer_button(game, width, height)
         
         # Draw instruction text or warning
         self._draw_instructions(game, width, height, all_cars_balanced, in_active_race)
@@ -421,6 +426,38 @@ class CustomizationUI(BaseUI):
             text = self.font.render(line, True, (180, 180, 255))
             self.screen.blit(text, (upgrade_panel_rect.x + 20, y_offset))
             y_offset += 25
+
+    def _draw_manufacturer_button(self, game, width, height):
+        """draw the manufacturer selector button"""
+        button_width = 155
+        button_height = 45
+        game.manufacturer_button_rect = pygame.Rect(
+            width//2 + width//7.5 - button_width//2,
+            height - 320,
+            button_width,
+            button_height
+        )
+        # Get mouse position
+        mouse_pos = pygame.mouse.get_pos()
+        # Check if mouse is over button
+        button_hovered = game.manufacturer_button_rect.collidepoint(mouse_pos)
+        # Button background with pulsing effect
+        pulse = abs(math.sin(pygame.time.get_ticks() * 0.002)) * 50 + 100
+        # Button is enabled
+        button_bg_color = (0, int(pulse * 0.7), int(pulse)) if button_hovered else (0, 0, int(pulse))
+        button_border_color = BLUE if not button_hovered else (0, 0, 240)
+        button_text_color = WHITE
+        pygame.draw.rect(self.screen, button_bg_color, game.manufacturer_button_rect)
+        pygame.draw.rect(self.screen, button_border_color, game.manufacturer_button_rect, 3, border_radius=10)
+        # Button text
+        button_text = "SELECT MANUFACTURER"
+        button_surface = pygame.font.Font(None, 17).render(button_text, True, button_text_color)
+        button_text_pos = (
+            game.manufacturer_button_rect.centerx - button_surface.get_width()//2,
+            game.manufacturer_button_rect.centery - button_surface.get_height()//2
+        )
+        
+        self.screen.blit(button_surface, button_text_pos)
         
     def _draw_race_button(self, game, width, height, all_cars_balanced, in_active_race):
         """Draw the start race button at the bottom of the screen"""
@@ -444,7 +481,7 @@ class CustomizationUI(BaseUI):
         if all_cars_balanced and not in_active_race:
             # Button is enabled
             button_bg_color = (0, int(pulse * 0.7), int(pulse)) if button_hovered else (0, 0, int(pulse))
-            button_border_color = GREEN if not button_hovered else (100, 255, 100)
+            button_border_color = WHITE if not button_hovered else (250, 250, 250)
             button_text_color = WHITE
             game.race_button_enabled = True
         else:
