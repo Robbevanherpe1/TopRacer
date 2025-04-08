@@ -1,10 +1,7 @@
 import pygame
 import math
 import random
-import logging
 from track import WALL, TRACK, EMPTY, TRACKSIDE
-
-logger = logging.getLogger("TopRacer")
 
 class Car:
     def __init__(self, track, position=None, color=(0, 0, 255), name="Player"):
@@ -154,8 +151,6 @@ class Car:
                 self.x -= math.cos(radians) * 8  # Increased from 5 for better recovery
                 self.y -= math.sin(radians) * 8
                 
-                if self.debug_mode:
-                    logger.info(f"{self.name} recovered from crash at ({self.x:.1f}, {self.y:.1f})")
             return
         
         # Update push mode counter
@@ -180,11 +175,9 @@ class Car:
             if distance_moved < 3.0 and self.speed > 0.5:  # If barely moving but trying to move
                 self.stuck_counter += 1
                 if self.debug_mode:
-                    logger.debug(f"{self.name} possibly stuck. Counter: {self.stuck_counter}/3, Movement: {distance_moved:.1f}")
+                    pass
                 if self.stuck_counter >= 3:  # Stuck for 3 consecutive checks
                     self.is_stuck = True
-                    if self.debug_mode:
-                        logger.warning(f"{self.name} is stuck at ({self.x:.1f}, {self.y:.1f})! Attempting to reposition.")
             else:
                 self.stuck_counter = 0
                 self.is_stuck = False
@@ -198,10 +191,6 @@ class Car:
             self.y += random.randint(-15, 15)
             self.stuck_counter = 0
             self.is_stuck = False
-            
-            # Log the repositioning
-            if self.debug_mode:
-                logger.info(f"{self.name} was stuck and repositioned to ({self.x:.1f}, {self.y:.1f})")
         
         # AI driving logic - Get current target waypoint coordinates
         target_waypoint = self.track.waypoints[self.current_waypoint]
@@ -296,10 +285,6 @@ class Car:
             
             # Move to next waypoint
             self.current_waypoint = (self.current_waypoint + 1) % len(self.track.waypoints)
-            
-            # Log waypoint transition
-            if self.debug_mode:
-                logger.info(f"{self.name} reached waypoint {prev_waypoint}, now heading to {self.current_waypoint}")
             
             # Check if we've completed a lap when returning to waypoint 0
             if self.current_waypoint == 0 and prev_waypoint != 0:
@@ -474,8 +459,6 @@ class Car:
             # Add grace period to prevent immediate re-collision
             self.recovery_grace_period = 10
             
-            if self.debug_mode:
-                logger.warning(f"{self.name} collided with wall at ({forward_x:.1f}, {forward_y:.1f}), tile type: {tile_at_forward}")
             return True
         
         # Use a much smaller collision box when checking for obstacles
@@ -508,9 +491,6 @@ class Car:
             # Add grace period to prevent immediate re-collision
             self.recovery_grace_period = 10
             
-            if self.debug_mode:
-                cx, cy, tile = collision_point
-                logger.warning(f"{self.name} corner collision with wall at ({cx:.1f}, {cy:.1f}), tile type: {tile}")
             return True
             
         return False

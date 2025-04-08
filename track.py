@@ -2,9 +2,6 @@ import pygame
 import csv
 import math
 import os
-import logging
-
-logger = logging.getLogger("TopRacer")
 
 # Define tile type constants
 EMPTY = 18
