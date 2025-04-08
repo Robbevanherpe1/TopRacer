@@ -2,7 +2,7 @@
 
 TopRacer is a 2D racing management simulation where you can manage your own racing team, customize vehicles, and compete against AI opponents on various tracks.
 
-![Game Screenshot](assets/screenshot.png) *(Replace with an actual screenshot)*
+![Game Screenshot](assets/screenshot.png)
 
 ## Features
 
