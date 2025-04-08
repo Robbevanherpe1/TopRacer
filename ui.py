@@ -585,14 +585,124 @@ class UI:
         upgrade_title = self.subtitle_font.render("UPGRADES", True, WHITE)
         self.screen.blit(upgrade_title, (upgrade_panel_rect.centerx - upgrade_title.get_width()//2, upgrade_panel_rect.y + 20))
         
-        # Placeholder for future upgrades
-        upgrade_message = ["Coming Soon!", "Spend points to upgrade your car", "and improve its performance."]
-        y_offset = upgrade_panel_rect.y + 80
+        # Draw permanent upgrades section
+        upgrade_description = "Permanent upgrades boost performance of both cars:"
+        upgrade_desc_text = self.font.render(upgrade_description, True, (220, 220, 255))
+        self.screen.blit(upgrade_desc_text, (upgrade_panel_rect.x + 20, upgrade_panel_rect.y + 60))
         
-        for line in upgrade_message:
-            text = self.font.render(line, True, (180, 180, 180))
-            self.screen.blit(text, (upgrade_panel_rect.centerx - text.get_width()//2, y_offset))
-            y_offset += 30
+        # Define permanent upgrades to display
+        permanent_upgrades = [
+            {"name": "Engine", "level": game.engine_upgrade_level, "description": "Improves acceleration and top speed"},
+            {"name": "Tires", "level": game.tires_upgrade_level, "description": "Improves cornering grip and handling"},
+            {"name": "Aerodynamics", "level": game.aero_upgrade_level, "description": "Improves high-speed cornering and top speed"}
+        ]
+        
+        # Draw each upgrade with level indicator and upgrade button
+        y_offset = upgrade_panel_rect.y + 90
+        button_width = 120
+        button_height = 30
+        level_bar_width = 150
+        level_bar_height = 15
+        
+        # Store buttons info for mouse interaction
+        game.upgrade_buttons = {}
+        
+        # Store reference to car for upgrades
+        if not hasattr(car, 'game'):
+            car.game = game
+        
+        for i, upgrade in enumerate(permanent_upgrades):
+            # Upgrade name and current level
+            name_text = self.font.render(f"{upgrade['name']}", True, WHITE)
+            self.screen.blit(name_text, (upgrade_panel_rect.x + 20, y_offset))
+            
+            level_text = self.font.render(f"Level {upgrade['level']}/10", True, (220, 220, 255))
+            self.screen.blit(level_text, (upgrade_panel_rect.x + upgrade_panel_width - level_text.get_width() - 20, y_offset))
+            
+            # Draw level bar background
+            bar_x = upgrade_panel_rect.x + 20
+            bar_y = y_offset + 30
+            pygame.draw.rect(self.screen, (50, 50, 80), (bar_x, bar_y, level_bar_width, level_bar_height))
+            
+            # Draw filled level bar
+            fill_width = int(level_bar_width * (upgrade['level'] / 10))
+            upgrade_color = (80, 200, 120)  # Green for upgrades
+            pygame.draw.rect(self.screen, upgrade_color, (bar_x, bar_y, fill_width, level_bar_height))
+            
+            # Draw border
+            pygame.draw.rect(self.screen, (100, 100, 180), (bar_x, bar_y, level_bar_width, level_bar_height), 1)
+            
+            # Draw upgrade description
+            desc_text = pygame.font.Font(None, 20).render(upgrade['description'], True, (170, 170, 200))
+            self.screen.blit(desc_text, (bar_x, bar_y + 20))
+            
+            # Calculate cost of next upgrade level
+            current_level = upgrade['level']
+            if current_level < 10:  # Only show upgrade button if not max level
+                cost = game.base_upgrade_cost * (current_level + 1)
+                
+                # Draw upgrade button
+                button_x = upgrade_panel_rect.x + upgrade_panel_width - button_width - 20
+                button_y = bar_y + 15
+                button_rect = pygame.Rect(button_x, button_y, button_width, button_height)
+                
+                # Store button info
+                game.upgrade_buttons[upgrade['name']] = button_rect
+                
+                button_hovered = button_rect.collidepoint(mouse_pos) and not in_active_race
+                can_afford = game.player_points >= cost
+                
+                # Button colors based on state
+                if not can_afford:
+                    # Can't afford - red
+                    button_color = (100, 50, 50) if not button_hovered else (150, 70, 70)
+                    text_color = (200, 150, 150)
+                else:
+                    # Can afford - green
+                    button_color = (50, 100, 50) if not button_hovered else (70, 150, 70)
+                    text_color = (150, 220, 150)
+                    
+                # Disabled in race
+                if in_active_race:
+                    button_color = (70, 70, 90)
+                    text_color = (150, 150, 180)
+                
+                # Draw button
+                pygame.draw.rect(self.screen, button_color, button_rect)
+                pygame.draw.rect(self.screen, (100, 100, 150), button_rect, 1)
+                
+                # Button text
+                cost_text = f"Upgrade: {cost}"
+                cost_surface = pygame.font.Font(None, 22).render(cost_text, True, text_color)
+                cost_pos = (button_rect.centerx - cost_surface.get_width()//2,
+                            button_rect.centery - cost_surface.get_height()//2)
+                self.screen.blit(cost_surface, cost_pos)
+                
+                # Handle button clicks
+                if button_hovered and mouse_pressed and can_afford and not in_active_race:
+                    # Purchase the upgrade
+                    if upgrade['name'] == "Engine":
+                        game.engine_upgrade_level += 1
+                        game.player_points -= cost
+                    elif upgrade['name'] == "Tires":
+                        game.tires_upgrade_level += 1
+                        game.player_points -= cost
+                    elif upgrade['name'] == "Aerodynamics":
+                        game.aero_upgrade_level += 1
+                        game.player_points -= cost
+                    
+                    # Update car performance with new upgrades
+                    for car_idx in game.engineer_car_indices:
+                        car = game.cars[car_idx]
+                        if not hasattr(car, 'game'):
+                            car.game = game
+                        car.update_performance_from_setup()
+                    
+                    game.message = f"{upgrade['name']} upgraded to level {upgrade['level'] + 1}!"
+                    game.message_timer = 180
+                
+            # Move to next upgrade
+            y_offset += 80
         
         # Draw setup balance explanation
         balance_explanation = [

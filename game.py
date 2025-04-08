@@ -52,6 +52,8 @@ class Game:
 
         # Race settings
         self.MAX_LAPS = 5  # Race ends after 5 laps
+        
+        # Race positions
         self.race_positions = []  # Will store current race positions
         self.final_positions = []  # Will store final race positions when race ends
         self.race_finished = False  # Flag to indicate if race has finished
@@ -84,8 +86,18 @@ class Game:
         self.last_race_points_earned = 0
         self.last_race_xp_earned = 0
         
-    def handle_events(self):
-        for event in pygame.event.get():
+        # Permanent upgrade levels (0-10)
+        self.engine_upgrade_level = 0
+        self.tires_upgrade_level = 0
+        self.aero_upgrade_level = 0
+        
+        # Upgrade costs - increases with each level
+        self.base_upgrade_cost = 100
+        self.upgrade_buttons = {}
+        
+    def process_events(self, events):
+        """Process pygame events passed from the main loop"""
+        for event in events:
             if event.type == pygame.QUIT:
                 self.running = False
                 
@@ -143,7 +155,7 @@ class Game:
                         self.message = "Race resumed!"
                         self.message_timer = 180
                         
-                # Handle Escape key to return to start screen from customization only
+                # Handle Escape key to return to customization screen from racing
                 if event.key == pygame.K_ESCAPE:
                     if self.state == STATE_RACE_END:
                         # Go to customization screen instead of start screen
@@ -152,7 +164,12 @@ class Game:
                     elif self.state == STATE_CUSTOMIZATION:
                         # Return to start screen from customization
                         self.state = STATE_START_SCREEN
-                    # Removed ESC key functionality for exiting race
+                    elif self.state == STATE_RACING or self.state == STATE_PAUSE:
+                        # Cancel race and return to customization
+                        self.reset_race()
+                        self.state = STATE_CUSTOMIZATION
+                        self.message = "Race canceled!"
+                        self.message_timer = 180
                 
                 # Toggle waypoints visibility with W key
                 if event.key == pygame.K_w and self.state != STATE_START_SCREEN and self.state != STATE_RACE_END and self.state != STATE_CUSTOMIZATION:
@@ -194,6 +211,11 @@ class Game:
                     response = selected_car.toggle_push_mode()
                     self.message = response
                     self.message_timer = 180
+    
+    # Keep the original handle_events for backward compatibility but make it call process_events
+    def handle_events(self):
+        """Legacy method - now just passes pygame events to process_events"""
+        self.process_events(pygame.event.get())
     
     def update(self):
         if self.state == STATE_RACING:
@@ -323,13 +345,14 @@ class Game:
         self.final_positions = []
         self.race_finished = False
         
-        # Reset all cars to starting position
+        # Reset all cars to starting position at waypoint 0
         for car in self.cars:
-            # Reset position
-            car.x, car.y = self.track.get_start_position()
+            # Reset position to first waypoint (waypoint 0) instead of finish line
+            car.x, car.y = self.track.get_waypoint_position(0)
+            
             # Add small random offset to avoid collision at start
-            car.x += random.randint(-5, 5)
-            car.y += random.randint(-5, 5)
+            car.x += random.randint(-10, 10)
+            car.y += random.randint(-10, 10)
             
             # Reset direction
             car.initialize_car_direction()
@@ -342,6 +365,18 @@ class Game:
             car.recovery_timer = 0
             car.push_mode = False
             car.push_remaining = 0
+            
+            # Make sure the car has a reference to the game
+            if not hasattr(car, 'game'):
+                car.game = self
+                
+            # Make sure is_engineer_car is set properly
+            if car.name == "Team Alpha" or car.name == "Team Omega":
+                car.is_engineer_car = True
+                car.can_push = True
+            else:
+                car.is_engineer_car = False
+                car.can_push = False
             
             # Keep track of best lap from previous race
             # car.lap_times = []  # Uncomment to reset lap history

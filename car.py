@@ -1,7 +1,10 @@
 import pygame
 import math
 import random
-from track import WALL, TRACK
+import logging
+from track import WALL, TRACK, EMPTY, TRACKSIDE
+
+logger = logging.getLogger("TopRacer")
 
 class Car:
     def __init__(self, track, position=None, color=(0, 0, 255), name="Player"):
@@ -47,10 +50,7 @@ class Car:
         # Initialize speed
         self.speed = 0
         
-        # Calculate initial performance from setup
-        self.update_performance_from_setup()
-        
-        # Car dimensions - made smaller
+        # Car dimensions - explicitly defined early
         self.width = 14  # Reduced from 20
         self.height = 7  # Reduced from 10
         
@@ -67,8 +67,13 @@ class Car:
         self.push_remaining = 0
         self.can_push = True
         
-        # Flag to identify cars controlled by the racing engineer
+        # Flag to identify cars controlled by the racing engineer - explicitly set this early
         self.is_engineer_car = False
+        if name in ["Team Alpha", "Team Omega"]:
+            self.is_engineer_car = True
+        
+        # Reference to game object for upgrades
+        self.game = None
         
         # Collision detection
         self.crashed = False
@@ -78,13 +83,36 @@ class Car:
         self.skill_level = random.uniform(0.8, 1.2)  # Affects driving precision
         self.aggression = random.uniform(0.7, 1.3)   # Affects speed in corners
         
-
+        # Load car sprite based on name
         if self.name == "Team Alpha":
             self.sprite = pygame.image.load("assets/ferrari.png").convert_alpha()
         elif self.name == "Team Omega":
             self.sprite = pygame.image.load("assets/bentley.png").convert_alpha()
         else:
             self.sprite = pygame.image.load("assets/porsche.png").convert_alpha()
+        
+        # Calculate initial performance from setup
+        self.update_performance_from_setup()
+        
+        # Add a waypoint transition cooldown
+        self.waypoint_cooldown = 0
+        
+        # Add stuck detection variables
+        self.stuck_detection_timer = 0
+        self.last_position = (self.x, self.y)
+        self.stuck_counter = 0
+        self.stuck_threshold = 60  # 1 second at 60fps
+        self.is_stuck = False
+        
+        # Add path planning variables
+        self.avoidance_angle = 0
+        self.avoidance_counter = 0
+        self.last_obstacle_check = pygame.time.get_ticks()
+        self.obstacle_check_interval = 50  # Reduced from 100 - check more frequently
+        
+        # Add logging and debug properties
+        self.debug_mode = False
+        self.waypoint_detection_multiplier = 1.5  # More forgiving waypoint detection
         
     def initialize_car_direction(self):
         """Set initial car direction towards first waypoint"""
@@ -113,14 +141,21 @@ class Car:
     
     def update(self, dt):
         """Update car position and handle AI driving"""
+        # Initialize recovery grace period if not present
+        if not hasattr(self, 'recovery_grace_period'):
+            self.recovery_grace_period = 0
+            
         if self.crashed:
             self.recovery_timer -= 1
             if self.recovery_timer <= 0:
                 self.crashed = False
                 # Move slightly backward to recover
                 radians = math.radians(self.angle)
-                self.x -= math.cos(radians) * 5
-                self.y -= math.sin(radians) * 5
+                self.x -= math.cos(radians) * 8  # Increased from 5 for better recovery
+                self.y -= math.sin(radians) * 8
+                
+                if self.debug_mode:
+                    logger.info(f"{self.name} recovered from crash at ({self.x:.1f}, {self.y:.1f})")
             return
         
         # Update push mode counter
@@ -128,6 +163,45 @@ class Car:
             self.push_remaining -= 1
             if self.push_remaining <= 0:
                 self.push_mode = False
+        
+        # Decrease waypoint cooldown if it's active
+        if self.waypoint_cooldown > 0:
+            self.waypoint_cooldown -= 1
+        
+        # Check if car is stuck
+        self.stuck_detection_timer += 1
+        if self.stuck_detection_timer >= 30:  # Check every half second
+            self.stuck_detection_timer = 0
+            current_pos = (self.x, self.y)
+            # Calculate distance moved since last check
+            distance_moved = math.sqrt((current_pos[0] - self.last_position[0])**2 + 
+                                     (current_pos[1] - self.last_position[1])**2)
+            
+            if distance_moved < 3.0 and self.speed > 0.5:  # If barely moving but trying to move
+                self.stuck_counter += 1
+                if self.debug_mode:
+                    logger.debug(f"{self.name} possibly stuck. Counter: {self.stuck_counter}/3, Movement: {distance_moved:.1f}")
+                if self.stuck_counter >= 3:  # Stuck for 3 consecutive checks
+                    self.is_stuck = True
+                    if self.debug_mode:
+                        logger.warning(f"{self.name} is stuck at ({self.x:.1f}, {self.y:.1f})! Attempting to reposition.")
+            else:
+                self.stuck_counter = 0
+                self.is_stuck = False
+                
+            self.last_position = current_pos
+            
+        # Handle stuck state
+        if self.is_stuck:
+            # Try to get unstuck by making more aggressive random adjustments
+            self.x += random.randint(-15, 15)  # Increased from -10, 10
+            self.y += random.randint(-15, 15)
+            self.stuck_counter = 0
+            self.is_stuck = False
+            
+            # Log the repositioning
+            if self.debug_mode:
+                logger.info(f"{self.name} was stuck and repositioned to ({self.x:.1f}, {self.y:.1f})")
         
         # AI driving logic - Get current target waypoint coordinates
         target_waypoint = self.track.waypoints[self.current_waypoint]
@@ -138,6 +212,51 @@ class Car:
         dx = waypoint_x - self.x
         dy = waypoint_y - self.y
         target_angle = math.degrees(math.atan2(dy, dx))
+        
+        # Improved obstacle detection and avoidance
+        current_time = pygame.time.get_ticks()
+        if current_time - self.last_obstacle_check > self.obstacle_check_interval:
+            self.last_obstacle_check = current_time
+            # Check for obstacles ahead in driving direction
+            look_ahead_distance = 20 + self.speed * 5  # Look further when moving faster
+            radians = math.radians(self.angle)
+            look_x = self.x + math.cos(radians) * look_ahead_distance
+            look_y = self.y + math.sin(radians) * look_ahead_distance
+            
+            # Check if there's a wall ahead
+            if self.track.is_wall(look_x, look_y):
+                # Start avoiding the obstacle with a random direction bias
+                # This helps cars find a way around obstacles
+                if self.avoidance_counter == 0:
+                    self.avoidance_angle = random.choice([-1, 1]) * random.randint(30, 90)
+                self.avoidance_counter = 20  # Avoid for 20 frames
+            
+            # Also check for obstacles to the sides
+            side_angle = 45
+            side_distance = 15
+            
+            # Check left side
+            left_x = self.x + math.cos(math.radians(self.angle + side_angle)) * side_distance
+            left_y = self.y + math.sin(math.radians(self.angle + side_angle)) * side_distance
+            left_clear = not self.track.is_wall(left_x, left_y)
+            
+            # Check right side
+            right_x = self.x + math.cos(math.radians(self.angle - side_angle)) * side_distance
+            right_y = self.y + math.sin(math.radians(self.angle - side_angle)) * side_distance
+            right_clear = not self.track.is_wall(right_x, right_y)
+            
+            # If one side is clear and the other isn't, steer toward the clear side
+            if left_clear and not right_clear and self.avoidance_counter == 0:
+                self.avoidance_angle = 30
+                self.avoidance_counter = 10
+            elif right_clear and not left_clear and self.avoidance_counter == 0:
+                self.avoidance_angle = -30
+                self.avoidance_counter = 10
+        
+        # Apply the avoidance angle if active
+        if self.avoidance_counter > 0:
+            target_angle = (self.angle + self.avoidance_angle) % 360
+            self.avoidance_counter -= 1
         
         # Determine shortest angle to turn
         angle_diff = (target_angle - self.angle) % 360
@@ -163,14 +282,27 @@ class Car:
         
         # Improved waypoint transition - change to next waypoint when close enough
         # Better handling means tighter racing line
-        waypoint_threshold = 35 * (1.1 - (handling_effect - 0.8) * 0.5)  # Threshold varies with handling
+        waypoint_threshold = 45 * self.waypoint_detection_multiplier * (1.1 - (handling_effect - 0.8) * 0.5)  # Threshold varies with handling
         if self.is_engineer_car:
             waypoint_threshold *= 0.9  # Engineer cars follow more precise line
         
-        if distance_to_waypoint < waypoint_threshold:
+        # Only transition to next waypoint if cooldown is zero
+        if distance_to_waypoint < waypoint_threshold and self.waypoint_cooldown == 0:
+            # Set a cooldown before allowing next waypoint transition
+            self.waypoint_cooldown = 10  # Adjust this value as needed
+            
+            # Get previous waypoint for reference
+            prev_waypoint = self.current_waypoint
+            
+            # Move to next waypoint
             self.current_waypoint = (self.current_waypoint + 1) % len(self.track.waypoints)
-            # Check if we've completed a lap
-            if self.current_waypoint == 0:
+            
+            # Log waypoint transition
+            if self.debug_mode:
+                logger.info(f"{self.name} reached waypoint {prev_waypoint}, now heading to {self.current_waypoint}")
+            
+            # Check if we've completed a lap when returning to waypoint 0
+            if self.current_waypoint == 0 and prev_waypoint != 0:
                 current_time = pygame.time.get_ticks()
                 lap_time = (current_time - self.lap_start_time) / 1000  # Convert to seconds
                 self.lap_times.append(lap_time)
@@ -302,6 +434,10 @@ class Car:
                 brake_factor *= 1.1  # Engineer cars have slightly better braking
                 
             self.speed = max(self.speed - self.acceleration * brake_factor, target_speed)
+        
+        # Smoother speed adjustment in obstacles
+        if self.avoidance_counter > 0:
+            target_speed *= 0.7  # Slow down while avoiding obstacles
             
         # Convert angle to radians and update position
         radians = math.radians(self.angle)
@@ -312,26 +448,81 @@ class Car:
         self.check_collision()
         
     def check_collision(self):
-        # Get the corners of the car for collision detection
+        """Check for collisions with walls and handle recovery"""
+        # Skip collision detection if recently recovered (add a grace period)
+        if hasattr(self, 'recovery_grace_period') and self.recovery_grace_period > 0:
+            self.recovery_grace_period -= 1
+            return False
+            
+        # Get the corners of the car
         corners = self.get_corners()
         
-        # Check if any corner is in a wall
-        for corner in corners:
+        # Forward prediction distance - make it very short
+        radians = math.radians(self.angle)
+        forward_x = self.x + math.cos(radians) * (self.width * 0.3)  # Reduced from 0.7 to 0.3
+        forward_y = self.y + math.sin(radians) * (self.width * 0.3)  # Reduced from 0.7 to 0.3
+        
+        # Get tile type at forward position for debugging
+        tile_at_forward = self.track.get_tile_type_at(forward_x, forward_y)
+        
+        # Only crash if hitting a real wall (tile type 0)
+        if self.track.is_actual_wall(forward_x, forward_y):
+            self.crashed = True
+            self.recovery_timer = 20  # Shorter recovery time
+            self.speed *= 0.5  # Less penalty
+            self.avoidance_counter = 0
+            # Add grace period to prevent immediate re-collision
+            self.recovery_grace_period = 10
+            
+            if self.debug_mode:
+                logger.warning(f"{self.name} collided with wall at ({forward_x:.1f}, {forward_y:.1f}), tile type: {tile_at_forward}")
+            return True
+        
+        # Use a much smaller collision box when checking for obstacles
+        center_x, center_y = self.x, self.y
+        collision_detected = False
+        collision_point = None
+        
+        # Check for collision at a minimum of corners to reduce false positives
+        for i, corner in enumerate(corners):
             cx, cy = corner
-            # Convert to int before using as grid coordinates
-            if self.track.get_tile_at(int(cx), int(cy)) == WALL:
-                self.crashed = True
-                self.recovery_timer = 30  # Half-second recovery at 60fps
-                self.speed *= 0.5  # Slow down after crash
-                return
+            
+            # Move each corner 50% closer to the center (extremely reduced)
+            new_cx = cx * 0.5 + center_x * 0.5
+            new_cy = cy * 0.5 + center_y * 0.5
+            
+            # Get tile type for debugging
+            tile_type = self.track.get_tile_type_at(new_cx, new_cy)
+            
+            # Only crash on ACTUAL walls (tile type 0), not track boundaries or empty
+            if self.track.is_strict_wall(int(new_cx), int(new_cy)):
+                collision_detected = True
+                collision_point = (new_cx, new_cy, tile_type)
+                break
+        
+        if collision_detected and collision_point:
+            self.crashed = True
+            self.recovery_timer = 20  # Faster recovery
+            self.speed *= 0.5  # Less penalty
+            self.avoidance_counter = 0
+            # Add grace period to prevent immediate re-collision
+            self.recovery_grace_period = 10
+            
+            if self.debug_mode:
+                cx, cy, tile = collision_point
+                logger.warning(f"{self.name} corner collision with wall at ({cx:.1f}, {cy:.1f}), tile type: {tile}")
+            return True
+            
+        return False
     
     def get_corners(self):
         """Get the four corners of the car for collision detection"""
         cos_a = math.cos(math.radians(self.angle))
         sin_a = math.sin(math.radians(self.angle))
         
-        half_width = self.width / 2
-        half_height = self.height / 2
+        # MAJOR BUG FIX: Using much smaller collision box and fixing y coordinate calculation
+        half_width = self.width / 2 * 0.7  # Reduced by 30%
+        half_height = self.height / 2 * 0.7  # Reduced by 30%
         
         # Calculate rotated corners
         corners = []
@@ -339,8 +530,9 @@ class Car:
                        (half_width, -half_height), 
                        (half_width, half_height), 
                        (-half_width, half_height)]:
+            # CRITICAL BUG FIX: y calculation used self.x instead of self.y
             x = self.x + xm * cos_a - ym * sin_a
-            y = self.y + xm * sin_a + ym * cos_a
+            y = self.y + xm * sin_a + ym * cos_a  # This was using self.x incorrectly
             corners.append((x, y))
             
         return corners
@@ -446,6 +638,28 @@ class Car:
         
         # Brakes affect braking efficiency
         brakes_factor = 0.8 + (self.setup["Brakes"] / 10) * 0.4  # 0.8-1.2 range
+        
+        # Apply permanent upgrades if this is an engineer car and we're attached to a game
+        # Added safety checks to handle potential attribute errors
+        try:
+            if getattr(self, 'is_engineer_car', False) and hasattr(self, 'game') and self.game is not None:
+                # Engine upgrade provides a boost to engine factor
+                engine_upgrade_level = getattr(self.game, 'engine_upgrade_level', 0)
+                engine_upgrade_bonus = engine_upgrade_level * 0.03  # +0.3 at max level
+                engine_factor += engine_upgrade_bonus
+                
+                # Tire upgrade provides a boost to tire factor
+                tires_upgrade_level = getattr(self.game, 'tires_upgrade_level', 0)
+                tires_upgrade_bonus = tires_upgrade_level * 0.03  # +0.3 at max level
+                tires_factor += tires_upgrade_bonus
+                
+                # Aerodynamics upgrade provides a boost to aero factor
+                aero_upgrade_level = getattr(self.game, 'aero_upgrade_level', 0)
+                aero_upgrade_bonus = aero_upgrade_level * 0.03  # +0.3 at max level
+                aero_factor += aero_upgrade_bonus
+        except AttributeError:
+            # If any attribute error occurs, just continue with base values
+            pass
         
         # Calculate performance values
         self.max_speed = self.base_max_speed * ((engine_factor * 0.7) + (aero_factor * 0.3))

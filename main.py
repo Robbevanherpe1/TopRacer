@@ -1,9 +1,22 @@
 import pygame
 import sys
+import math
+import logging  # Add logging module
 from constants import *
 from game import Game
 from ui import UI
 from animation import Animation
+
+# Setup logging
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s - %(levelname)s - %(message)s',
+    handlers=[
+        logging.FileHandler("topracer.log"),
+        logging.StreamHandler()
+    ]
+)
+logger = logging.getLogger("TopRacer")
 
 def main():
     # Initialize pygame
@@ -28,14 +41,104 @@ def main():
     ui = UI(screen)
     animation = Animation(screen)
     
+    # Enable debug visualization for the track
+    game.track.debug_collisions = []
+    
+    # Configure car parameters to be more forgiving
+    for car in game.cars:
+        car.game = game
+        # Make waypoint detection more forgiving
+        car.waypoint_detection_multiplier = 1.5  # Larger radius to detect waypoints
+        car.stuck_threshold = 40  # More sensitive stuck detection (was 60)
+        # Enable debug logging for this car
+        car.debug_mode = True
+        # Add recovery grace period
+        car.recovery_grace_period = 0
+        # Make the car smaller for collision detection
+        car.width = 12  # Reduced from 14
+        car.height = 6  # Reduced from 7
+    
+    logger.info("Game initialized with cars: " + ", ".join([car.name for car in game.cars]))
+    
+    # Reset race positions and make cars start at the beginning
+    game.reset_race()
+    
+    # Ensure cars start at spawn points with enough space between them
+    spacing = 30  # Increased from 20 to give more room
+    for i, car in enumerate(game.cars):
+        # Get the start position from the track
+        start_x, start_y = game.track.get_start_position()
+        
+        # Set cars to start at the spawn position
+        car.x, car.y = start_x, start_y
+        
+        # Add offset based on car index to avoid collision at start
+        offset_angle = (i * 45) % 360  # Spread cars in different directions
+        offset_distance = spacing * ((i // 4) + 1)  # Increase distance for more cars
+        
+        # Calculate offset position
+        radians = math.radians(offset_angle)
+        car.x += math.cos(radians) * offset_distance
+        car.y += math.sin(radians) * offset_distance
+        
+        # Set current waypoint to 0 and face toward it
+        car.current_waypoint = 0
+        car.initialize_car_direction()
+        
+        # Make sure cars start with zero speed and no avoidance behavior
+        car.speed = 0
+        if hasattr(car, 'avoidance_counter'):
+            car.avoidance_counter = 0
+        
+        # Log starting position of car
+        logger.info(f"Car {car.name} starting at position ({car.x:.1f}, {car.y:.1f}), angle: {car.angle:.1f}°")
+    
+    # Add function to monitor cars during the race
+    def log_car_status():
+        if game.state == STATE_RACING and game.race_time % 120 == 0:  # Every 2 seconds at 60fps
+            for i, car in enumerate(game.cars):
+                target_wp = game.track.waypoints[car.current_waypoint]
+                target_x = target_wp[0] * game.track.tile_size + game.track.tile_size // 2
+                target_y = target_wp[1] * game.track.tile_size + game.track.tile_size // 2
+                distance = math.sqrt((car.x - target_x)**2 + (car.y - target_y)**2)
+                logger.info(f"Car {car.name}: Pos({car.x:.1f}, {car.y:.1f}), Speed: {car.speed:.1f}, " +
+                           f"Waypoint: {car.current_waypoint}, Distance: {distance:.1f}, Laps: {car.laps}")
+                
+                # Check for potential navigation issues
+                if car.stuck_counter > 0:
+                    logger.warning(f"Car {car.name} might be stuck! Counter: {car.stuck_counter}/3")
+    
+    # Add keybinding for toggling collision debug visualization
+    collision_debug = False
+    
     # Main game loop
     while game.running:
-        # Handle events
-        game.handle_events()
+        # Collect all events once
+        events = pygame.event.get()
+        
+        # Process events locally first for direct controls
+        for event in events:
+            if event.type == pygame.QUIT:
+                game.running = False
+            elif event.type == pygame.KEYDOWN:
+                # Add debugging keybindings
+                if event.key == pygame.K_c:  # 'C' key toggles collision debug
+                    collision_debug = not collision_debug
+                    game.track.debug_collisions = [] if collision_debug else None
+                    logger.info(f"Collision debug visualization {'enabled' if collision_debug else 'disabled'}")
+                
+                # Handle other keys that need to be processed immediately
+                if event.key == pygame.K_ESCAPE:
+                    game.running = False
+        
+        # Send events to the game for handling game-specific logic
+        game.process_events(events)
         
         # Update game state
         if game.state == STATE_RACING:
             game.update()
+            # Log car status periodically
+            log_car_status()
         elif game.state == STATE_START_SCREEN:
             animation.update_start_screen_animation()
         
