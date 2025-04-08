@@ -47,10 +47,12 @@ class CustomizationUI(BaseUI):
         self.screen.blit(team_manufacturer_text, (width//2 - team_manufacturer_text.get_width() + 50, 15))
 
         #current garage
-        #current_garage = game.player_current_garage
-        #current_garage_text = self.font.render(f"Current Garage: {current_garage}", True, (200, 200, 200))
+        if game.selected_car_index == 0:
+            current_garage = 1
+        else:
+            current_garage = 2
 
-        current_garage_text = self.font.render(f"Garage: 1", True, (200, 200, 200))
+        current_garage_text = self.font.render(f"Garage: {current_garage}", True, (200, 200, 200))
         self.screen.blit(current_garage_text, (width//2 - current_garage_text.get_width(), 50))
         
         # Points and team rating (right side of header)
