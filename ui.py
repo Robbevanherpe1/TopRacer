@@ -671,7 +671,7 @@ class UI:
             desc_text = pygame.font.Font(None, 20).render(description, True, (170, 170, 200) if not in_active_race else (130, 130, 160))
             self.screen.blit(desc_text, (bar_x, bar_y + 25))
             
-            y_offset += option_height
+            y_offset += option_height + 20
         
         # Draw upgrades section (right panel)
         upgrade_panel_width = 350
@@ -689,15 +689,15 @@ class UI:
         self.screen.blit(upgrade_title, (upgrade_panel_rect.centerx - upgrade_title.get_width()//2, upgrade_panel_rect.y + 20))
         
         # Draw permanent upgrades section
-        upgrade_description = "Permanent upgrades boost performance of both cars:"
+        upgrade_description = "Permanent upgrades boost performance"
         upgrade_desc_text = self.font.render(upgrade_description, True, (220, 220, 255))
         self.screen.blit(upgrade_desc_text, (upgrade_panel_rect.x + 20, upgrade_panel_rect.y + 60))
         
         # Define permanent upgrades to display
         permanent_upgrades = [
-            {"name": "Engine", "level": game.engine_upgrade_level, "description": "Improves acceleration and top speed"},
-            {"name": "Tires", "level": game.tires_upgrade_level, "description": "Improves cornering grip and handling"},
-            {"name": "Aerodynamics", "level": game.aero_upgrade_level, "description": "Improves high-speed cornering and top speed"}
+            {"name": "Engine", "level": game.engine_upgrade_level, "description": "Improves acceleration"},
+            {"name": "Tires", "level": game.tires_upgrade_level, "description": "Improves handling"},
+            {"name": "Aerodynamics", "level": game.aero_upgrade_level, "description": "Improves aerodynamics"},
         ]
         
         # Draw each upgrade with level indicator and upgrade button
@@ -817,7 +817,7 @@ class UI:
             "• Both cars must have balanced setups!"
         ]
         
-        y_offset += 40
+        y_offset += 15
         for line in balance_explanation:
             text = self.font.render(line, True, (180, 180, 255))
             self.screen.blit(text, (upgrade_panel_rect.x + 20, y_offset))
