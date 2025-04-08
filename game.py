@@ -346,9 +346,16 @@ class Game:
         self.race_finished = False
         
         # Reset all cars to starting position at waypoint 0
-        for car in self.cars:
-            # Reset position to first waypoint (waypoint 0) instead of finish line
-            car.x, car.y = self.track.get_waypoint_position(0)
+        # Get all spawn positions
+        spawn_positions = self.track.get_all_spawn_positions()
+        
+        for i, car in enumerate(self.cars):
+            # Reset position to first spawn position based on index
+            if i < len(spawn_positions):
+                car.x, car.y = spawn_positions[i]
+            else:
+                # If more cars than spawn points, use the first spawn point
+                car.x, car.y = spawn_positions[0]
             
             # Add small random offset to avoid collision at start
             car.x += random.randint(-10, 10)
