@@ -128,12 +128,6 @@ def main():
             # Draw all cars
             for i, car in enumerate(game.cars):
                 car.draw(screen, game.camera_x, game.camera_y)
-                
-                # Add indicator for selected car
-                if i == game.selected_car_index:
-                    pos_x = int(car.x - game.camera_x)
-                    pos_y = int(car.y - game.camera_y)
-                    pygame.draw.circle(screen, WHITE, (pos_x, pos_y), 18, 1)
             
             # Draw UI components
             ui.draw_ui(game)
