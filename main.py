@@ -3,7 +3,7 @@ import sys
 import math
 from constants import *
 from game import Game
-from ui import UI
+from ui import UI  # This now uses our controller UI class
 from animation import Animation
 
 def main():
