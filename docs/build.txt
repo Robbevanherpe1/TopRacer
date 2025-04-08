@@ -1,0 +1,5 @@
+python3 -m PyInstaller main.spec
+
+/Users/robbe/Library/Python/3.9/bin/pyi-makespec --onefile --add-data "assets:assets" --add-data "tracks:tracks" --add-data "ui:ui" main.py
+
+/Users/robbe/Documents/Projects/Games/TopRacer/dist/main
