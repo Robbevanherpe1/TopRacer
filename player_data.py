@@ -41,7 +41,12 @@ def add_player(name):
         players[name] = {
             "points": 0,
             "team_rating": 0,
-            "races_won": 0
+            "races_won": 0,
+            "upgrades": {
+                "engine": 0,
+                "tires": 0,
+                "aero": 0
+            }
         }
         save_players(players)
         return True
@@ -56,7 +61,7 @@ def delete_player(name):
         return True
     return False
 
-def update_player_stats(name, points, team_rating, races_won):
+def update_player_stats(name, points, team_rating, races_won, upgrades=None):
     """Update player stats and save to file"""
     players = load_players()
     if name not in players:
@@ -65,4 +70,13 @@ def update_player_stats(name, points, team_rating, races_won):
     players[name]["points"] = points
     players[name]["team_rating"] = team_rating
     players[name]["races_won"] = races_won
+    
+    # Save car upgrades
+    if upgrades:
+        if "upgrades" not in players[name]:
+            players[name]["upgrades"] = {}
+        players[name]["upgrades"]["engine"] = upgrades.get("engine", 0)
+        players[name]["upgrades"]["tires"] = upgrades.get("tires", 0)
+        players[name]["upgrades"]["aero"] = upgrades.get("aero", 0)
+    
     save_players(players)

@@ -45,6 +45,10 @@ def main():
         # Make the car smaller for collision detection
         car.width = 12  # Reduced from 14
         car.height = 6  # Reduced from 7
+        
+        # Update car performance to reflect loaded upgrade levels
+        if car.is_engineer_car and hasattr(game, 'engine_upgrade_level'):
+            car.update_performance_from_setup()
     
     # Reset race positions and make cars start at the beginning
     game.reset_race()
