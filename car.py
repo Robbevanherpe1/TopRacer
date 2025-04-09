@@ -10,6 +10,33 @@ class Car:
         "Mercedes", "Nissan", "Porsche", "Renault"
     ]
     
+    # Define manufacturer-specific bonuses (values from -0.1 to +0.1)
+    MANUFACTURER_BONUSES = {
+        # Ferrari: Excellent engine, good aero, average handling, weaker brakes
+        "Ferrari": {"Engine": 0.09, "Aerodynamics": 0.06, "Handling": 0.0, "Brakes": -0.05, "Tires": -0.04},
+        
+        # Bentley: Good brakes and comfort (handling), weaker acceleration
+        "Bentley": {"Engine": -0.05, "Aerodynamics": 0.02, "Handling": 0.08, "Brakes": 0.07, "Tires": -0.02},
+        
+        # BMW: Balanced with better handling and brakes
+        "BMW": {"Engine": 0.02, "Aerodynamics": 0.0, "Handling": 0.06, "Brakes": 0.05, "Tires": -0.02},
+        
+        # McLaren: Excellent aero and good engine
+        "McLaren": {"Engine": 0.05, "Aerodynamics": 0.09, "Handling": 0.03, "Brakes": -0.02, "Tires": -0.03},
+        
+        # Mercedes: Good engine, balanced overall
+        "Mercedes": {"Engine": 0.07, "Aerodynamics": 0.02, "Handling": 0.03, "Brakes": 0.0, "Tires": -0.02},
+        
+        # Nissan: Great tires, decent engine, weaker aero
+        "Nissan": {"Engine": 0.04, "Aerodynamics": -0.05, "Handling": 0.0, "Brakes": 0.02, "Tires": 0.08},
+        
+        # Porsche: Great handling and brakes, decent aero
+        "Porsche": {"Engine": 0.0, "Aerodynamics": 0.04, "Handling": 0.08, "Brakes": 0.05, "Tires": -0.03},
+        
+        # Renault: Best tires, weaker engine
+        "Renault": {"Engine": -0.03, "Aerodynamics": -0.02, "Handling": 0.03, "Brakes": 0.0, "Tires": 0.09}
+    }
+    
     def __init__(self, track, position=None, color=(0, 0, 255), name="Player", manufacturer="Ferrari"):
         self.track = track
         self.name = name
@@ -652,6 +679,14 @@ class Car:
         except AttributeError:
             # If any attribute error occurs, just continue with base values
             pass
+        
+        # Apply manufacturer-specific bonuses
+        manufacturer_bonus = Car.MANUFACTURER_BONUSES.get(self.manufacturer, {})
+        engine_factor += manufacturer_bonus.get("Engine", 0)
+        tires_factor += manufacturer_bonus.get("Tires", 0)
+        aero_factor += manufacturer_bonus.get("Aerodynamics", 0)
+        handling_factor += manufacturer_bonus.get("Handling", 0)
+        brakes_factor += manufacturer_bonus.get("Brakes", 0)
         
         # Calculate performance values
         self.max_speed = self.base_max_speed * ((engine_factor * 0.7) + (aero_factor * 0.3))
