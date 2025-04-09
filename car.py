@@ -4,11 +4,22 @@ import random
 from track import WALL, TRACK, EMPTY, TRACKSIDE
 
 class Car:
+    # Define available manufacturers at the class level for better maintainability
+    AVAILABLE_MANUFACTURERS = [
+        "Ferrari", "Bentley", "BMW", "McLaren", 
+        "Mercedes", "Nissan", "Porsche", "Renault"
+    ]
+    
     def __init__(self, track, position=None, color=(0, 0, 255), name="Player", manufacturer="Ferrari"):
         self.track = track
         self.name = name
         self.color = color
-        self.manufacturer = manufacturer
+        
+        # Select random manufacturer for AI cars (not player or engineer cars)
+        if "AI Car" in name and manufacturer == "Ferrari":
+            self.manufacturer = random.choice(Car.AVAILABLE_MANUFACTURERS)
+        else:
+            self.manufacturer = manufacturer
         
         # Set starting position
         if position:
@@ -82,7 +93,7 @@ class Car:
         self.aggression = random.uniform(0.7, 1.3)   # Affects speed in corners
         
         # Load car sprite based on manufacturer
-        self.update_manufacturer(manufacturer)
+        self.update_manufacturer(self.manufacturer)
         
         # Calculate initial performance from setup
         self.update_performance_from_setup()
