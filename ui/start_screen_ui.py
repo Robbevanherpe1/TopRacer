@@ -13,7 +13,7 @@ class StartScreenUI(BaseUI):
         
         title = "TopRacer"
         subtitle = "Racing Management Game"
-        extra_info = "ESC - Exit | SPACE - Continue with selected team"
+        extra_info = "ESC - Exit Game | START - start with selected team"
         version = "v1.1"
         
         title_surface = self.title_font.render(title, True, WHITE)
@@ -155,7 +155,7 @@ class StartScreenUI(BaseUI):
         """Draw the input field for adding a new team name"""
         # Show input field when adding a new player
         if game.adding_new_player:
-            input_y = panel_rect.bottom - 110
+            input_y = panel_rect.bottom - 160
             input_width = 300
             input_height = 40
             
