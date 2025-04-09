@@ -19,6 +19,13 @@ class Game:
         # Track which cars are controllable by the racing engineer
         self.engineer_car_indices = []
         
+        # Manufacturer properties
+        self.player_team_manufacturer = "Ferrari"
+        self.available_manufacturers = [
+            "Ferrari", "Bentley", "BMW", "McLaren", 
+            "Mercedes", "Nissan", "Porsche", "Renault"
+        ]
+        
         # Set up two special racing engineer cars
         # First engineer car - blue with special name
         engineer_car1 = Car(self.track, color=BLUE, name="Team Alpha")
@@ -76,6 +83,12 @@ class Game:
         self.start_race_button_rect = pygame.Rect(0, 0, 300, 70)  # Will position later
         self.setup_sliders = {}
         self.active_slider = None
+        self.manufacturer_button_rect = pygame.Rect(0, 0, 155, 45)  # Manufacturer button
+        
+        # Manufacturer selection properties
+        self.back_button_rect = pygame.Rect(0, 0, 300, 60)  # Back to garage button
+        self.left_arrow_rect = pygame.Rect(0, 0, 60, 60)  # Left arrow for carousel
+        self.right_arrow_rect = pygame.Rect(0, 0, 60, 60)  # Right arrow for carousel
         
         # Player stats - enhanced with proper rewards system
         self.player_points = 0
@@ -182,7 +195,58 @@ class Game:
                         else:
                             self.message = f"All cars must have exactly 25 setup points to start! Check: {', '.join(unbalanced_cars)}" if unbalanced_cars else "Car setups must be balanced!"
                             self.message_timer = 180
+                    
+                    # Check if the manufacturer selection button was clicked
+                    if self.manufacturer_button_rect.collidepoint(event.pos):
+                        self.state = STATE_MANUFACTURER_SELECTION
+                        self.message = "Select a manufacturer for your car"
+                        self.message_timer = 180
+                    
+                    # Check if garage selection arrows were clicked
+                    if hasattr(self, 'garage_left_arrow_rect') and self.garage_left_arrow_rect.collidepoint(event.pos):
+                        # Switch to previous engineer car
+                        if len(self.engineer_car_indices) > 0:
+                            # Find current index in engineer_car_indices
+                            current_idx = self.engineer_car_indices.index(self.selected_car_index) \
+                                if self.selected_car_index in self.engineer_car_indices else 0
+                            # Get previous engineer car index
+                            next_idx = (current_idx - 1) % len(self.engineer_car_indices)
+                            self.selected_car_index = self.engineer_car_indices[next_idx]
+                            self.message = f"Selected {self.cars[self.selected_car_index].name}"
+                            self.message_timer = 120
+                            
+                    if hasattr(self, 'garage_right_arrow_rect') and self.garage_right_arrow_rect.collidepoint(event.pos):
+                        # Switch to next engineer car
+                        if len(self.engineer_car_indices) > 0:
+                            # Find current index in engineer_car_indices
+                            current_idx = self.engineer_car_indices.index(self.selected_car_index) \
+                                if self.selected_car_index in self.engineer_car_indices else 0
+                            # Get next engineer car index
+                            next_idx = (current_idx + 1) % len(self.engineer_car_indices)
+                            self.selected_car_index = self.engineer_car_indices[next_idx]
+                            self.message = f"Selected {self.cars[self.selected_car_index].name}"
+                            self.message_timer = 120
                 
+                elif self.state == STATE_MANUFACTURER_SELECTION:
+                    # Check if Back to Garage button was clicked
+                    if self.back_button_rect.collidepoint(event.pos):
+                        # Return to customization screen
+                        self.state = STATE_CUSTOMIZATION
+                        self.message = "Back to garage"
+                        self.message_timer = 120
+                    
+                    # Check if left arrow was clicked
+                    if self.left_arrow_rect.collidepoint(event.pos):
+                        # Use the global UI instance
+                        if hasattr(self, 'ui'):
+                            self.ui.manufacturer_ui.rotate_carousel_left()
+                    
+                    # Check if right arrow was clicked
+                    if self.right_arrow_rect.collidepoint(event.pos):
+                        # Use the global UI instance
+                        if hasattr(self, 'ui'):
+                            self.ui.manufacturer_ui.rotate_carousel_right()
+            
             if event.type == pygame.KEYDOWN:
                 if event.key == pygame.K_SPACE:
                     if self.state == STATE_START_SCREEN:
@@ -214,6 +278,11 @@ class Game:
                         self.state = STATE_CUSTOMIZATION
                         self.message = "Race canceled!"
                         self.message_timer = 180
+                    elif self.state == STATE_MANUFACTURER_SELECTION:
+                        # Return to customization screen from manufacturer selection
+                        self.state = STATE_CUSTOMIZATION
+                        self.message = "Back to garage"
+                        self.message_timer = 120
                 
                 # Toggle waypoints visibility with W key
                 if event.key == pygame.K_w and self.state != STATE_START_SCREEN and self.state != STATE_RACE_END and self.state != STATE_CUSTOMIZATION:
@@ -226,28 +295,56 @@ class Game:
                 
                 # Select different engineer car with arrow keys (works in both race and customization screens)
                 if event.key == pygame.K_LEFT or event.key == pygame.K_UP:
-                    # Cycle through only the engineer cars
-                    if len(self.engineer_car_indices) > 0:
-                        # Find current index in engineer_car_indices
-                        current_idx = self.engineer_car_indices.index(self.selected_car_index) \
-                            if self.selected_car_index in self.engineer_car_indices else 0
-                        # Get previous engineer car index
-                        next_idx = (current_idx - 1) % len(self.engineer_car_indices)
-                        self.selected_car_index = self.engineer_car_indices[next_idx]
-                        self.message = f"Selected {self.cars[self.selected_car_index].name}"
-                        self.message_timer = 120
+                    if self.state == STATE_MANUFACTURER_SELECTION:
+                        # Rotate carousel left in manufacturer selection
+                        if hasattr(self, 'ui'):
+                            self.ui.manufacturer_ui.rotate_carousel_left()
+                    else:
+                        # Cycle through only the engineer cars
+                        if len(self.engineer_car_indices) > 0:
+                            # Find current index in engineer_car_indices
+                            current_idx = self.engineer_car_indices.index(self.selected_car_index) \
+                                if self.selected_car_index in self.engineer_car_indices else 0
+                            # Get previous engineer car index
+                            next_idx = (current_idx - 1) % len(self.engineer_car_indices)
+                            self.selected_car_index = self.engineer_car_indices[next_idx]
+                            self.message = f"Selected {self.cars[self.selected_car_index].name}"
+                            self.message_timer = 120
                     
                 if event.key == pygame.K_RIGHT or event.key == pygame.K_DOWN:
-                    # Cycle through only the engineer cars
-                    if len(self.engineer_car_indices) > 0:
-                        # Find current index in engineer_car_indices
-                        current_idx = self.engineer_car_indices.index(self.selected_car_index) \
-                            if self.selected_car_index in self.engineer_car_indices else 0
-                        # Get next engineer car index
-                        next_idx = (current_idx + 1) % len(self.engineer_car_indices)
-                        self.selected_car_index = self.engineer_car_indices[next_idx]
-                        self.message = f"Selected {self.cars[self.selected_car_index].name}"
-                        self.message_timer = 120
+                    if self.state == STATE_MANUFACTURER_SELECTION:
+                        # Rotate carousel right in manufacturer selection
+                        if hasattr(self, 'ui'):
+                            self.ui.manufacturer_ui.rotate_carousel_right()
+                    else:
+                        # Cycle through only the engineer cars
+                        if len(self.engineer_car_indices) > 0:
+                            # Find current index in engineer_car_indices
+                            current_idx = self.engineer_car_indices.index(self.selected_car_index) \
+                                if self.selected_car_index in self.engineer_car_indices else 0
+                            # Get next engineer car index
+                            next_idx = (current_idx + 1) % len(self.engineer_car_indices)
+                            self.selected_car_index = self.engineer_car_indices[next_idx]
+                            self.message = f"Selected {self.cars[self.selected_car_index].name}"
+                            self.message_timer = 120
+                
+                # Handle return/enter key to select manufacturer and return to customization screen
+                if event.key == pygame.K_RETURN and self.state == STATE_MANUFACTURER_SELECTION:
+                    # Get selected manufacturer from UI
+                    if hasattr(self, 'ui'):
+                        selected_manufacturer = self.ui.manufacturer_ui.get_selected_manufacturer()
+                        
+                        # Update the selected car with the new manufacturer
+                        car = self.cars[self.selected_car_index]
+                        car.update_manufacturer(selected_manufacturer["name"])
+                        
+                        # Update team manufacturer in game
+                        self.player_team_manufacturer = selected_manufacturer["name"]
+                        
+                        # Return to customization screen
+                        self.state = STATE_CUSTOMIZATION
+                        self.message = f"Selected {selected_manufacturer['name']} as manufacturer"
+                        self.message_timer = 180
                     
                 # Engineer commands
                 if event.key == pygame.K_p and self.state == STATE_RACING:

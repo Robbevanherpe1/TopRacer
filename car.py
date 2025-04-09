@@ -4,10 +4,11 @@ import random
 from track import WALL, TRACK, EMPTY, TRACKSIDE
 
 class Car:
-    def __init__(self, track, position=None, color=(0, 0, 255), name="Player"):
+    def __init__(self, track, position=None, color=(0, 0, 255), name="Player", manufacturer="Ferrari"):
         self.track = track
         self.name = name
         self.color = color
+        self.manufacturer = manufacturer
         
         # Set starting position
         if position:
@@ -80,13 +81,8 @@ class Car:
         self.skill_level = random.uniform(0.8, 1.2)  # Affects driving precision
         self.aggression = random.uniform(0.7, 1.3)   # Affects speed in corners
         
-        # Load car sprite based on name
-        if self.name == "Team Alpha":
-            self.sprite = pygame.image.load("assets/ferrari.png").convert_alpha()
-        elif self.name == "Team Omega":
-            self.sprite = pygame.image.load("assets/bentley.png").convert_alpha()
-        else:
-            self.sprite = pygame.image.load("assets/porsche.png").convert_alpha()
+        # Load car sprite based on manufacturer
+        self.update_manufacturer(manufacturer)
         
         # Calculate initial performance from setup
         self.update_performance_from_setup()
@@ -750,3 +746,25 @@ class Car:
         
         # Update car performance based on new setup
         self.update_performance_from_setup()
+
+    def update_manufacturer(self, manufacturer):
+        """Update the car's manufacturer and sprite"""
+        self.manufacturer = manufacturer
+        try:
+            # Map manufacturer names to filenames
+            sprite_map = {
+                "Ferrari": "ferrari.png",
+                "Bentley": "bentley.png",
+                "BMW": "bmw.png",
+                "McLaren": "mclearn.png",
+                "Mercedes": "mercedes.png",
+                "Nissan": "nissan.png",
+                "Porsche": "porsche.png",
+                "Renault": "renault.png"
+            }
+            filename = sprite_map.get(manufacturer, "ferrari.png")
+            self.sprite = pygame.image.load(f"assets/{filename}").convert_alpha()
+        except Exception as e:
+            print(f"Error loading car sprite for {manufacturer}: {e}")
+            # Fallback to default
+            self.sprite = pygame.image.load("assets/ferrari.png").convert_alpha()

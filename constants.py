@@ -15,6 +15,7 @@ STATE_CUSTOMIZATION = 1  # New state for car customization screen
 STATE_RACING = 2
 STATE_PAUSE = 3
 STATE_RACE_END = 4  # New state for race end screen
+STATE_MANUFACTURER_SELECTION = 5  # New state for manufacturer selection screen
 
 # Colors
 BLACK = (0, 0, 0)

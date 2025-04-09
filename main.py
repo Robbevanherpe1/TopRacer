@@ -6,6 +6,9 @@ from game import Game
 from ui import UI  # This now uses our controller UI class
 from animation import Animation
 
+# Global UI instance that will be accessible to other modules
+global_ui = None
+
 def main():
     # Initialize pygame
     pygame.init()
@@ -26,8 +29,15 @@ def main():
     
     # Initialize game components
     game = Game(screen)
-    ui = UI(screen)
+    
+    # Initialize global UI
+    global global_ui
+    global_ui = UI(screen)
+    
     animation = Animation(screen)
+    
+    # Make UI instance available to game
+    game.ui = global_ui
     
     # Enable debug visualization for the track
     game.track.debug_collisions = []
@@ -117,11 +127,13 @@ def main():
             
             # Draw current game state
             if game.state == STATE_START_SCREEN:
-                ui.draw_start_screen(game, animation)
+                global_ui.draw_start_screen(game, animation)
             elif game.state == STATE_CUSTOMIZATION:
-                ui.draw_customization_screen(game)
+                global_ui.draw_customization_screen(game)
             elif game.state == STATE_RACE_END:
-                ui.draw_race_end_screen(game, animation)
+                global_ui.draw_race_end_screen(game, animation)
+            elif game.state == STATE_MANUFACTURER_SELECTION:
+                global_ui.draw_manufacturer_selection(game)
             else:
                 # Draw the track
                 game.track.draw(screen, game.camera_x, game.camera_y)
@@ -135,8 +147,8 @@ def main():
                     car.draw(screen, game.camera_x, game.camera_y)
                 
                 # Draw UI components
-                ui.draw_ui(game)
-                ui.draw_position_overlay(game)
+                global_ui.draw_ui(game)
+                global_ui.draw_position_overlay(game)
             
             # Update the display
             pygame.display.flip()

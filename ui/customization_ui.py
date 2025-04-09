@@ -41,11 +41,10 @@ class CustomizationUI(BaseUI):
 
 
 
-        #Team manufacturer
-        #team_manufacturer = game.player_team_manufacturer 
-        #team_manufacturer_text = self.font.render(f"Team: {team_manufacturer}", True, (200, 200, 200))
-
-        team_manufacturer_text = self.font.render(f"Manufacturer: ferrari", True, (200, 200, 200))
+        # Team manufacturer - display the current manufacturer from the selected car
+        current_car = game.cars[game.selected_car_index]
+        team_manufacturer = current_car.manufacturer
+        team_manufacturer_text = self.font.render(f"Manufacturer: {team_manufacturer}", True, (200, 200, 200))
         self.screen.blit(team_manufacturer_text, (width//2 - team_manufacturer_text.get_width() + 50, 15))
 
         #current garage
@@ -53,7 +52,6 @@ class CustomizationUI(BaseUI):
             current_garage = 1
         else:
             current_garage = 2
-
         current_garage_text = self.font.render(f"Garage: {current_garage}", True, (200, 200, 200))
         self.screen.blit(current_garage_text, (width//2 - current_garage_text.get_width(), 50))
         
@@ -114,6 +112,39 @@ class CustomizationUI(BaseUI):
             text_surface = stats_font.render(stat_text, True, (200, 200, 255))
             self.screen.blit(text_surface, (preview_rect.x + 20, stats_y))
             stats_y += 30
+            
+        # Draw garage selection arrows
+        arrow_y = preview_rect.y + preview_rect.height + 40
+        arrow_size = 40
+        
+        # Left arrow
+        left_arrow_points = [
+            (preview_rect.x + 100, arrow_y),
+            (preview_rect.x + 100 + arrow_size, arrow_y - arrow_size // 2),
+            (preview_rect.x + 100 + arrow_size, arrow_y + arrow_size // 2)
+        ]
+        pygame.draw.polygon(self.screen, (200, 200, 255), left_arrow_points)
+        
+        # Right arrow
+        right_arrow_points = [
+            (preview_rect.x + preview_rect.width - 100, arrow_y),
+            (preview_rect.x + preview_rect.width - 100 - arrow_size, arrow_y - arrow_size // 2),
+            (preview_rect.x + preview_rect.width - 100 - arrow_size, arrow_y + arrow_size // 2)
+        ]
+        pygame.draw.polygon(self.screen, (200, 200, 255), right_arrow_points)
+        
+        # Garage selection text
+        garage_text = "SELECT GARAGE"
+        garage_surface = self.font.render(garage_text, True, WHITE)
+        self.screen.blit(garage_surface, (preview_rect.centerx - garage_surface.get_width() // 2, arrow_y - 15))
+        
+        # Store active regions for arrow hit detection
+        game.garage_left_arrow_rect = pygame.Rect(
+            preview_rect.x + 100 - 30, arrow_y - 30, 60, 60
+        )
+        game.garage_right_arrow_rect = pygame.Rect(
+            preview_rect.x + preview_rect.width - 100 - 30, arrow_y - 30, 60, 60
+        )
             
         # Draw setup options (left panel)
         setup_panel_width = 350
@@ -318,7 +349,8 @@ class CustomizationUI(BaseUI):
         if not hasattr(car, 'game'):
             car.game = game
         
-        for i, upgrade in enumerate(permanent_upgrades):
+        # Fixed loop syntax - use enumerate if you need an index, or just iterate through the list
+        for upgrade in permanent_upgrades:
             # Upgrade name and current level
             name_text = self.font.render(f"{upgrade['name']}", True, WHITE)
             self.screen.blit(name_text, (upgrade_panel_rect.x + 20, y_offset))
