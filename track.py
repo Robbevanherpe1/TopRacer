@@ -13,7 +13,7 @@ CAR_SPAWN = 9  # This is the same as finish line in the map
 CAR_SPAWN_POINT = 10  # New constant for actual car spawn points
 
 class Track:
-    def __init__(self, csv_path='tracks/track1_2.csv'):
+    def __init__(self, csv_path='tracks/csv/track1_2.csv'):
         self.tile_size = 40  # Increased from 30 to 40
         # Pre-load textures
         self.load_textures()
