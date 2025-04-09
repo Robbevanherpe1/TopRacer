@@ -42,9 +42,42 @@ def add_player(name):
             "points": 0,
             "team_rating": 0,
             "races_won": 0,
-            "current_manufacturer": "Ferrari",  # Default manufacturer
+            "garages": {
+                "Team Alpha": {
+                    "manufacturer": "Ferrari",
+                    "setup": {
+                        "Engine": 5,
+                        "Tires": 5,
+                        "Aerodynamics": 5,
+                        "Handling": 5,
+                        "Brakes": 5
+                    },
+                    "upgrades": {
+                        "engine": 0,
+                        "tires": 0,
+                        "aero": 0
+                    }
+                },
+                "Team Omega": {
+                    "manufacturer": "Ferrari",
+                    "setup": {
+                        "Engine": 5,
+                        "Tires": 5,
+                        "Aerodynamics": 5,
+                        "Handling": 5,
+                        "Brakes": 5
+                    },
+                    "upgrades": {
+                        "engine": 0,
+                        "tires": 0,
+                        "aero": 0
+                    }
+                }
+            },
+            # Keep current_manufacturer and cars for backward compatibility
+            "current_manufacturer": "Ferrari",
             "cars": {
-                "Ferrari": {  # Default car
+                "Ferrari": {
                     "setup": {
                         "Engine": 5,
                         "Tires": 5,
@@ -163,3 +196,133 @@ def update_player_car(name, manufacturer, setup=None, upgrades=None):
         players[name]["cars"][manufacturer]["upgrades"] = upgrades
     
     save_players(players)
+
+def update_player_garage(name, garage_name, manufacturer=None, setup=None, upgrades=None):
+    """
+    Update a specific garage for a player with manufacturer, setup and upgrades
+    
+    Args:
+        name (str): Player name
+        garage_name (str): Garage name (Team Alpha or Team Omega)
+        manufacturer (str, optional): Car manufacturer name
+        setup (dict, optional): Car setup values
+        upgrades (dict, optional): Upgrade levels
+    """
+    players = load_players()
+    if name not in players:
+        add_player(name)
+    
+    # Make sure the garages structure exists
+    if "garages" not in players[name]:
+        players[name]["garages"] = {
+            "Team Alpha": {
+                "manufacturer": "Ferrari",
+                "setup": {
+                    "Engine": 5, "Tires": 5, "Aerodynamics": 5, "Handling": 5, "Brakes": 5
+                },
+                "upgrades": {
+                    "engine": 0, "tires": 0, "aero": 0
+                }
+            },
+            "Team Omega": {
+                "manufacturer": "Ferrari",
+                "setup": {
+                    "Engine": 5, "Tires": 5, "Aerodynamics": 5, "Handling": 5, "Brakes": 5
+                },
+                "upgrades": {
+                    "engine": 0, "tires": 0, "aero": 0
+                }
+            }
+        }
+    
+    # Make sure this specific garage exists
+    if garage_name not in players[name]["garages"]:
+        players[name]["garages"][garage_name] = {
+            "manufacturer": "Ferrari",
+            "setup": {
+                "Engine": 5, "Tires": 5, "Aerodynamics": 5, "Handling": 5, "Brakes": 5
+            },
+            "upgrades": {
+                "engine": 0, "tires": 0, "aero": 0
+            }
+        }
+    
+    # Update manufacturer if provided
+    if manufacturer:
+        players[name]["garages"][garage_name]["manufacturer"] = manufacturer
+    
+    # Update setup if provided
+    if setup:
+        players[name]["garages"][garage_name]["setup"] = setup
+    
+    # Update upgrades if provided
+    if upgrades:
+        players[name]["garages"][garage_name]["upgrades"] = upgrades
+    
+    save_players(players)
+    
+    return players[name]["garages"][garage_name]
+
+def get_player_garage(name, garage_name):
+    """
+    Get data for a specific garage
+    
+    Args:
+        name (str): Player name
+        garage_name (str): Garage name (Team Alpha or Team Omega)
+    
+    Returns:
+        dict: Garage data including manufacturer, setup and upgrades
+    """
+    players = load_players()
+    if name not in players:
+        add_player(name)
+        players = load_players()
+    
+    # Make sure garages structure exists
+    if "garages" not in players[name]:
+        # Try to migrate legacy data if it exists
+        if "cars" in players[name] and "current_manufacturer" in players[name]:
+            manufacturer = players[name]["current_manufacturer"]
+            setup = None
+            upgrades = None
+            
+            if manufacturer in players[name]["cars"]:
+                if "setup" in players[name]["cars"][manufacturer]:
+                    setup = players[name]["cars"][manufacturer]["setup"]
+                if "upgrades" in players[name]["cars"][manufacturer]:
+                    upgrades = players[name]["cars"][manufacturer]["upgrades"]
+            
+            # Create garages with migrated data
+            players[name]["garages"] = {
+                "Team Alpha": {
+                    "manufacturer": manufacturer,
+                    "setup": setup or {
+                        "Engine": 5, "Tires": 5, "Aerodynamics": 5, "Handling": 5, "Brakes": 5
+                    },
+                    "upgrades": upgrades or {
+                        "engine": 0, "tires": 0, "aero": 0
+                    }
+                },
+                "Team Omega": {
+                    "manufacturer": manufacturer,
+                    "setup": setup or {
+                        "Engine": 5, "Tires": 5, "Aerodynamics": 5, "Handling": 5, "Brakes": 5
+                    },
+                    "upgrades": upgrades or {
+                        "engine": 0, "tires": 0, "aero": 0
+                    }
+                }
+            }
+            save_players(players)
+        else:
+            # Just create default garages
+            update_player_garage(name, garage_name)
+            players = load_players()
+    
+    # Make sure this specific garage exists
+    if garage_name not in players[name]["garages"]:
+        update_player_garage(name, garage_name)
+        players = load_players()
+    
+    return players[name]["garages"][garage_name]
