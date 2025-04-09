@@ -230,9 +230,21 @@ class Game:
                 elif self.state == STATE_MANUFACTURER_SELECTION:
                     # Check if Back to Garage button was clicked
                     if self.back_button_rect.collidepoint(event.pos):
+                        # Before returning to customization screen, select the current manufacturer
+                        if hasattr(self, 'ui'):
+                            # Get the currently displayed manufacturer
+                            selected_manufacturer = self.ui.manufacturer_ui.get_selected_manufacturer()
+                            
+                            # Update the selected car with the new manufacturer
+                            car = self.cars[self.selected_car_index]
+                            car.update_manufacturer(selected_manufacturer["name"])
+                            
+                            # Update team manufacturer in game
+                            self.player_team_manufacturer = selected_manufacturer["name"]
+                        
                         # Return to customization screen
                         self.state = STATE_CUSTOMIZATION
-                        self.message = "Back to garage"
+                        self.message = f"Selected {selected_manufacturer['name']} as manufacturer"
                         self.message_timer = 120
                     
                     # Check if left arrow was clicked
