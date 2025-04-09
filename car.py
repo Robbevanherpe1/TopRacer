@@ -1,7 +1,9 @@
 import pygame
 import math
 import random
-from track import WALL, TRACK, EMPTY, TRACKSIDE
+import csv
+from tracks.constants import WALL, TRACK, EMPTY, TRACKSIDE
+from constants import *
 
 class Car:
     # Define available manufacturers at the class level for better maintainability
