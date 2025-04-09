@@ -111,14 +111,34 @@ class StartScreenUI(BaseUI):
             player_y += player_height + button_margin
         
         self._draw_add_player_button(game, panel_rect)
+        self._draw_start_button(game, panel_rect)
         self._draw_input_field(game, panel_rect)
+
+    def _draw_start_button(self, game, panel_rect):
+        """Draw the 'Start Game' button"""
+        game.start_button_rect = pygame.Rect(
+            panel_rect.centerx - 30, 
+            panel_rect.bottom - 85,
+            200, 40
+        )
+        
+        # Button with pulsing effect
+        pulse = abs(math.sin(pygame.time.get_ticks() * 0.002)) * 50 + 200
+        button_bg_color = (0, 0, int(pulse * 0.5))
+        pygame.draw.rect(self.screen, button_bg_color, game.start_button_rect)
+        pygame.draw.rect(self.screen, WHITE, game.start_button_rect, 2)
+        
+        start_text = self.font.render("Start Game", True, WHITE)
+        self.screen.blit(start_text, (game.start_button_rect.centerx - start_text.get_width()//2, 
+                                      game.start_button_rect.centery - start_text.get_height()//2))
+        
         
     def _draw_add_player_button(self, game, panel_rect):
         """Draw the 'Add New Team' button"""
         game.add_player_button_rect = pygame.Rect(
-            panel_rect.centerx - 100, 
+            panel_rect.centerx - 190, 
             panel_rect.bottom - 85,
-            200, 40
+            150, 40
         )
         
         # Button with pulsing effect
