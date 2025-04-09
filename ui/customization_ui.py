@@ -293,6 +293,9 @@ class CustomizationUI(BaseUI):
         # Draw "Start Race" button at the bottom - disable if in active race
         self._draw_race_button(game, width, height, all_cars_balanced, in_active_race)
 
+        # Draw "Menu" button at the bottom - disable if in active race
+        self._draw_menu_button(game, width, height, in_active_race)
+
         # Draw manufacturer selector button
         self._draw_manufacturer_button(game, width, height)
         
@@ -496,7 +499,53 @@ class CustomizationUI(BaseUI):
         )
         
         self.screen.blit(button_surface, button_text_pos)
+
+    def _draw_menu_button(self, game, width, height, in_active_race):
+        """Draw the menu button at the bottom of the screen"""
+        # Square button dimensions
+        button_height = 70
+        button_width = 90
         
+        # Position the button to the left of the start race button
+        game.menu_button_rect = pygame.Rect(
+            width//2 - 250,
+            height - 120,
+            button_width,
+            button_height
+        )
+        
+        # Get mouse position 
+        mouse_pos = pygame.mouse.get_pos()
+        
+        # Check if mouse is over button
+        button_hovered = game.menu_button_rect.collidepoint(mouse_pos) and not in_active_race
+
+        # Button background and text - red coloring for menu button
+        if not in_active_race:
+            # Button is enabled
+            button_bg_color = (220, 50, 50) if button_hovered else (180, 30, 30)
+            button_border_color = WHITE if button_hovered else (220, 220, 220)
+            button_text_color = WHITE
+            game.menu_button_enabled = True
+        else:
+            # Button is disabled
+            button_bg_color = (100, 40, 40)
+            button_border_color = (120, 60, 60)
+            button_text_color = (180, 180, 180)
+            game.menu_button_enabled = False
+            
+        pygame.draw.rect(self.screen, button_bg_color, game.menu_button_rect, border_radius=10)
+        pygame.draw.rect(self.screen, button_border_color, game.menu_button_rect, 3, border_radius=10)
+        
+        # Button text
+        button_text = "MENU"
+        button_surface = self.subtitle_font.render(button_text, True, button_text_color)
+        button_text_pos = (
+            game.menu_button_rect.centerx - button_surface.get_width()//2,
+            game.menu_button_rect.centery - button_surface.get_height()//2
+        )
+        self.screen.blit(button_surface, button_text_pos)
+
     def _draw_race_button(self, game, width, height, all_cars_balanced, in_active_race):
         """Draw the start race button at the bottom of the screen"""
         button_width = 300

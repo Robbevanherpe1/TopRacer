@@ -276,6 +276,16 @@ class Game:
                             self.message = f"All cars must have exactly 25 setup points to start! Check: {', '.join(unbalanced_cars)}" if unbalanced_cars else "Car setups must be balanced!"
                             self.message_timer = 180
                     
+                    # Check if Menu button was clicked
+                    if hasattr(self, 'menu_button_rect') and self.menu_button_rect.collidepoint(event.pos):
+                        if hasattr(self, 'menu_button_enabled') and self.menu_button_enabled:
+                            # Save current player stats before returning to start screen
+                            self.save_current_player_stats()
+                            # Return to start screen
+                            self.state = STATE_START_SCREEN
+                            self.message = "Returned to main menu"
+                            self.message_timer = 180
+                    
                     # Check if the manufacturer selection button was clicked
                     if self.manufacturer_button_rect.collidepoint(event.pos):
                         self.state = STATE_MANUFACTURER_SELECTION
