@@ -14,7 +14,7 @@ class StartScreenUI(BaseUI):
         title = "TopRacer"
         subtitle = "Racing Management Game"
         extra_info = "ESC - Exit Game | START - start with selected team"
-        version = "v1.1"
+        version = "v1.2.0"
         
         title_surface = self.title_font.render(title, True, WHITE)
         subtitle_surface = self.subtitle_font.render(subtitle, True, CYAN)

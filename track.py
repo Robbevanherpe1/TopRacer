@@ -15,8 +15,31 @@ CAR_SPAWN_POINT = 10  # New constant for actual car spawn points
 class Track:
     def __init__(self, csv_path='tracks/track1_2.csv'):
         self.tile_size = 40  # Increased from 30 to 40
+        # Pre-load textures
+        self.load_textures()
         self.load_from_csv(csv_path)
         self.define_waypoints()
+        
+    def load_textures(self):
+        """Load and prepare all textures used for the track tiles"""
+        # Create a dictionary to store all tile textures
+        self.tile_textures = {}
+        
+        # Load grass texture for trackside
+        try:
+            grass_img = pygame.image.load('assets/grass.png')
+            asfalt_img = pygame.image.load('assets/asphalt.png')
+            tirewall_img = pygame.image.load('assets/tirewall.png')
+            # Scale the image to fit the tile size
+            self.tile_textures[TRACKSIDE] = pygame.transform.scale(grass_img, (self.tile_size, self.tile_size))
+            self.tile_textures[TRACK] = pygame.transform.scale(asfalt_img, (self.tile_size, self.tile_size))
+            self.tile_textures[WALL] = pygame.transform.scale(tirewall_img, (self.tile_size, self.tile_size))
+        except pygame.error:
+            print("Warning: Could not load texture, using color instead")
+            self.tile_textures[TRACKSIDE] = None
+            self.tile_textures[TRACK] = None
+            self.tile_textures[WALL] = None
+        # You can add more textures here for other tile types
         
     def load_from_csv(self, csv_path):
         """Load track data from a CSV file"""
@@ -200,25 +223,37 @@ class Track:
                 tile_type = self.grid[y][x]
                 
                 if tile_type == EMPTY:
-                    # Draw grass/empty
-                    pygame.draw.rect(surface, (50, 150, 50), 
-                                    (screen_x, screen_y, self.tile_size, self.tile_size))
+                     # Draw trackside using pre-loaded texture
+                    if TRACKSIDE in self.tile_textures and self.tile_textures[TRACKSIDE]:
+                        surface.blit(self.tile_textures[TRACKSIDE], (screen_x, screen_y))
+                    else:
+                        # Fallback to colored rectangle if texture isn't loaded
+                        pygame.draw.rect(surface, (50, 150, 50), 
+                                        (screen_x, screen_y, self.tile_size, self.tile_size))
                 elif tile_type == TRACK:
-                    # Draw track
-                    pygame.draw.rect(surface, (80, 80, 80), 
-                                    (screen_x, screen_y, self.tile_size, self.tile_size))
+                    # Draw track using pre-loaded texture
+                    if TRACK in self.tile_textures and self.tile_textures[TRACK]:
+                        surface.blit(self.tile_textures[TRACK], (screen_x, screen_y))
+                    else:
+                        # Fallback to colored rectangle if texture isn't loaded
+                        pygame.draw.rect(surface, (80, 80, 80), 
+                                        (screen_x, screen_y, self.tile_size, self.tile_size))
                 elif tile_type == WALL:
-                    # Draw wall
-                    pygame.draw.rect(surface, (150, 150, 150), 
-                                    (screen_x, screen_y, self.tile_size, self.tile_size))
+                    # Draw wall using pre-loaded texture
+                    if WALL in self.tile_textures and self.tile_textures[WALL]:
+                        surface.blit(self.tile_textures[WALL], (screen_x, screen_y))
+                    else:
+                        # Fallback to colored rectangle if texture isn't loaded
+                        pygame.draw.rect(surface, (150, 150, 150), 
+                                        (screen_x, screen_y, self.tile_size, self.tile_size))
                 elif tile_type == FINISH_LINE:
                     # Draw finish line
                     pygame.draw.rect(surface, (200, 200, 50), 
                                     (screen_x, screen_y, self.tile_size, self.tile_size))
                 elif tile_type == TRACKSIDE:
-                    # Draw trackside
-                    pygame.draw.rect(surface, (120, 120, 120), 
-                                    (screen_x, screen_y, self.tile_size, self.tile_size))
+                    # Draw trackside (grass)# Fallback to colored rectangle if texture isn't loaded
+                        pygame.draw.rect(surface, (50, 150, 50), 
+                                      (screen_x, screen_y, self.tile_size, self.tile_size))
                 elif tile_type == CAR_SPAWN:
                     # Draw regular finish line (same as finish line)
                     pygame.draw.rect(surface, (200, 200, 50), 
