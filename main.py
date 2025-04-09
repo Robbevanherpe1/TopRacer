@@ -39,6 +39,13 @@ def main():
     # Make UI instance available to game
     game.ui = global_ui
     
+    # Initialize car_upgrades if not already set
+    if not hasattr(game, 'car_upgrades') or game.car_upgrades is None:
+        game.car_upgrades = {}
+        for car_idx in game.engineer_car_indices:
+            car = game.cars[car_idx]
+            game.car_upgrades[car.name] = {"engine": 0, "tires": 0, "aero": 0}
+    
     # Enable debug visualization for the track
     game.track.debug_collisions = []
     

@@ -52,10 +52,14 @@ def add_player(name):
                         "Handling": 5,
                         "Brakes": 5
                     },
-                    "upgrades": {
-                        "engine": 0,
-                        "tires": 0,
-                        "aero": 0
+                    "cars": {
+                        "Ferrari": {
+                            "upgrades": {
+                                "engine": 0,
+                                "tires": 0,
+                                "aero": 0
+                            }
+                        }
                     }
                 },
                 "Team Omega": {
@@ -67,10 +71,14 @@ def add_player(name):
                         "Handling": 5,
                         "Brakes": 5
                     },
-                    "upgrades": {
-                        "engine": 0,
-                        "tires": 0,
-                        "aero": 0
+                    "cars": {
+                        "Ferrari": {
+                            "upgrades": {
+                                "engine": 0,
+                                "tires": 0,
+                                "aero": 0
+                            }
+                        }
                     }
                 }
             },
@@ -220,8 +228,10 @@ def update_player_garage(name, garage_name, manufacturer=None, setup=None, upgra
                 "setup": {
                     "Engine": 5, "Tires": 5, "Aerodynamics": 5, "Handling": 5, "Brakes": 5
                 },
-                "upgrades": {
-                    "engine": 0, "tires": 0, "aero": 0
+                "cars": {
+                    "Ferrari": {
+                        "upgrades": {"engine": 0, "tires": 0, "aero": 0}
+                    }
                 }
             },
             "Team Omega": {
@@ -229,8 +239,10 @@ def update_player_garage(name, garage_name, manufacturer=None, setup=None, upgra
                 "setup": {
                     "Engine": 5, "Tires": 5, "Aerodynamics": 5, "Handling": 5, "Brakes": 5
                 },
-                "upgrades": {
-                    "engine": 0, "tires": 0, "aero": 0
+                "cars": {
+                    "Ferrari": {
+                        "upgrades": {"engine": 0, "tires": 0, "aero": 0}
+                    }
                 }
             }
         }
@@ -242,22 +254,51 @@ def update_player_garage(name, garage_name, manufacturer=None, setup=None, upgra
             "setup": {
                 "Engine": 5, "Tires": 5, "Aerodynamics": 5, "Handling": 5, "Brakes": 5
             },
-            "upgrades": {
-                "engine": 0, "tires": 0, "aero": 0
+            "cars": {
+                "Ferrari": {
+                    "upgrades": {"engine": 0, "tires": 0, "aero": 0}
+                }
             }
         }
     
     # Update manufacturer if provided
     if manufacturer:
+        # Save the old manufacturer
+        old_manufacturer = players[name]["garages"][garage_name].get("manufacturer", "Ferrari")
+        
+        # Update to new manufacturer
         players[name]["garages"][garage_name]["manufacturer"] = manufacturer
+        
+        # Ensure the cars dictionary exists
+        if "cars" not in players[name]["garages"][garage_name]:
+            players[name]["garages"][garage_name]["cars"] = {}
+        
+        # Make sure this manufacturer exists in cars
+        if manufacturer not in players[name]["garages"][garage_name]["cars"]:
+            # Create default upgrades for this manufacturer
+            players[name]["garages"][garage_name]["cars"][manufacturer] = {
+                "upgrades": {"engine": 0, "tires": 0, "aero": 0}
+            }
+    else:
+        # Use existing manufacturer
+        manufacturer = players[name]["garages"][garage_name].get("manufacturer", "Ferrari")
     
     # Update setup if provided
     if setup:
         players[name]["garages"][garage_name]["setup"] = setup
     
-    # Update upgrades if provided
-    if upgrades:
-        players[name]["garages"][garage_name]["upgrades"] = upgrades
+    # Update upgrades if provided and store them with the specific manufacturer
+    if upgrades and manufacturer:
+        # Ensure the cars structure exists
+        if "cars" not in players[name]["garages"][garage_name]:
+            players[name]["garages"][garage_name]["cars"] = {}
+        
+        # Ensure this manufacturer exists in cars
+        if manufacturer not in players[name]["garages"][garage_name]["cars"]:
+            players[name]["garages"][garage_name]["cars"][manufacturer] = {}
+        
+        # Update upgrades for specific manufacturer
+        players[name]["garages"][garage_name]["cars"][manufacturer]["upgrades"] = upgrades
     
     save_players(players)
     
@@ -300,8 +341,12 @@ def get_player_garage(name, garage_name):
                     "setup": setup or {
                         "Engine": 5, "Tires": 5, "Aerodynamics": 5, "Handling": 5, "Brakes": 5
                     },
-                    "upgrades": upgrades or {
-                        "engine": 0, "tires": 0, "aero": 0
+                    "cars": {
+                        manufacturer: {
+                            "upgrades": upgrades or {
+                                "engine": 0, "tires": 0, "aero": 0
+                            }
+                        }
                     }
                 },
                 "Team Omega": {
@@ -309,8 +354,12 @@ def get_player_garage(name, garage_name):
                     "setup": setup or {
                         "Engine": 5, "Tires": 5, "Aerodynamics": 5, "Handling": 5, "Brakes": 5
                     },
-                    "upgrades": upgrades or {
-                        "engine": 0, "tires": 0, "aero": 0
+                    "cars": {
+                        manufacturer: {
+                            "upgrades": upgrades or {
+                                "engine": 0, "tires": 0, "aero": 0
+                            }
+                        }
                     }
                 }
             }
@@ -326,3 +375,27 @@ def get_player_garage(name, garage_name):
         players = load_players()
     
     return players[name]["garages"][garage_name]
+
+def get_car_upgrades(name, garage_name, manufacturer):
+    """
+    Get upgrades for a specific car in a garage
+    
+    Args:
+        name (str): Player name
+        garage_name (str): Garage name (Team Alpha or Team Omega)
+        manufacturer (str): Car manufacturer name
+    
+    Returns:
+        dict: Upgrades for the specified car
+    """
+    garage_data = get_player_garage(name, garage_name)
+    
+    # Check if this car exists in the garage's cars
+    if "cars" in garage_data and manufacturer in garage_data["cars"]:
+        # Return upgrades for this specific car
+        return garage_data["cars"][manufacturer].get("upgrades", {
+            "engine": 0, "tires": 0, "aero": 0
+        })
+    
+    # Return default upgrades if car doesn't exist yet
+    return {"engine": 0, "tires": 0, "aero": 0}

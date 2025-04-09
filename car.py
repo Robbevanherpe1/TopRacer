@@ -627,23 +627,43 @@ class Car:
         brakes_factor = 0.8 + (self.setup["Brakes"] / 10) * 0.4  # 0.8-1.2 range
         
         # Apply permanent upgrades if this is an engineer car and we're attached to a game
-        # Added safety checks to handle potential attribute errors
         try:
             if getattr(self, 'is_engineer_car', False) and hasattr(self, 'game') and self.game is not None:
-                # Engine upgrade provides a boost to engine factor
-                engine_upgrade_level = getattr(self.game, 'engine_upgrade_level', 0)
-                engine_upgrade_bonus = engine_upgrade_level * 0.03  # +0.3 at max level
-                engine_factor += engine_upgrade_bonus
+                # Get car-specific upgrades if available
+                garage_name = self.name  # Team Alpha or Team Omega
                 
-                # Tire upgrade provides a boost to tire factor
-                tires_upgrade_level = getattr(self.game, 'tires_upgrade_level', 0)
-                tires_upgrade_bonus = tires_upgrade_level * 0.03  # +0.3 at max level
-                tires_factor += tires_upgrade_bonus
-                
-                # Aerodynamics upgrade provides a boost to aero factor
-                aero_upgrade_level = getattr(self.game, 'aero_upgrade_level', 0)
-                aero_upgrade_bonus = aero_upgrade_level * 0.03  # +0.3 at max level
-                aero_factor += aero_upgrade_bonus
+                # Check if car_upgrades exists and has data for this garage
+                if hasattr(self.game, 'car_upgrades') and garage_name in self.game.car_upgrades:
+                    # Use the specific car's upgrades for this manufacturer
+                    car_upgrades = self.game.car_upgrades[garage_name]
+                    
+                    # Engine upgrade provides a boost to engine factor
+                    engine_upgrade_level = car_upgrades.get('engine', 0)
+                    engine_upgrade_bonus = engine_upgrade_level * 0.03  # +0.3 at max level
+                    engine_factor += engine_upgrade_bonus
+                    
+                    # Tire upgrade provides a boost to tire factor
+                    tires_upgrade_level = car_upgrades.get('tires', 0)
+                    tires_upgrade_bonus = tires_upgrade_level * 0.03  # +0.3 at max level
+                    tires_factor += tires_upgrade_bonus
+                    
+                    # Aerodynamics upgrade provides a boost to aero factor
+                    aero_upgrade_level = car_upgrades.get('aero', 0)
+                    aero_upgrade_bonus = aero_upgrade_level * 0.03  # +0.3 at max level
+                    aero_factor += aero_upgrade_bonus
+                else:
+                    # Fall back to legacy global upgrades if car-specific ones aren't available
+                    engine_upgrade_level = getattr(self.game, 'engine_upgrade_level', 0)
+                    engine_upgrade_bonus = engine_upgrade_level * 0.03
+                    engine_factor += engine_upgrade_bonus
+                    
+                    tires_upgrade_level = getattr(self.game, 'tires_upgrade_level', 0)
+                    tires_upgrade_bonus = tires_upgrade_level * 0.03
+                    tires_factor += tires_upgrade_bonus
+                    
+                    aero_upgrade_level = getattr(self.game, 'aero_upgrade_level', 0)
+                    aero_upgrade_bonus = aero_upgrade_level * 0.03
+                    aero_factor += aero_upgrade_bonus
         except AttributeError:
             # If any attribute error occurs, just continue with base values
             pass

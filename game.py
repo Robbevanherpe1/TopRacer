@@ -100,7 +100,10 @@ class Game:
         self.last_race_points_earned = 0
         self.last_race_xp_earned = 0
         
-        # Permanent upgrade levels (0-10)
+        # Car-specific upgrades for each garage (updated structure)
+        self.car_upgrades = {}
+        
+        # Legacy upgrade variables - keep for backward compatibility
         self.engine_upgrade_level = 0
         self.tires_upgrade_level = 0
         self.aero_upgrade_level = 0
@@ -155,13 +158,12 @@ class Game:
             # Create a dictionary with the car's setup
             setup = car.setup.copy()
             
-            # Each garage car needs its own upgrades, but for now they share the global ones
-            # In a future update, we'd want to track upgrades per garage
-            upgrades = {
-                "engine": self.engine_upgrade_level,
-                "tires": self.tires_upgrade_level,
-                "aero": self.aero_upgrade_level
-            }
+            # Each garage car needs its own upgrades
+            upgrades = self.car_upgrades.get(garage_name, {
+                "engine": 0,
+                "tires": 0,
+                "aero": 0
+            })
             
             # Save the garage-specific car data
             update_player_garage(
@@ -182,7 +184,10 @@ class Game:
             self.player_username = name  # Use player name as username
             
             # Import player_data functions
-            from player_data import get_player_garage
+            from player_data import get_player_garage, get_car_upgrades
+            
+            # Initialize the car_upgrades dictionary
+            self.car_upgrades = {}
             
             # Load data for each engineer car from its respective garage
             for car_idx in self.engineer_car_indices:
@@ -207,12 +212,22 @@ class Game:
                         if key in car.setup:
                             car.setup[key] = value
                 
-                # Apply the upgrades if available (currently global - will be per-garage in future)
-                if "upgrades" in garage_data:
-                    if garage_name == "Team Alpha":  # Only load once
-                        self.engine_upgrade_level = garage_data["upgrades"].get("engine", 0)
-                        self.tires_upgrade_level = garage_data["upgrades"].get("tires", 0)
-                        self.aero_upgrade_level = garage_data["upgrades"].get("aero", 0)
+                # Get the car-specific upgrades for the current manufacturer
+                manufacturer = car.manufacturer
+                car_upgrades = get_car_upgrades(name, garage_name, manufacturer)
+                
+                # Store these upgrades in the game's car_upgrades dictionary
+                if garage_name not in self.car_upgrades:
+                    self.car_upgrades[garage_name] = {}
+                
+                # Store manufacturer-specific upgrades
+                self.car_upgrades[garage_name] = car_upgrades
+                
+                # For backward compatibility, set the global upgrade levels from Team Alpha car
+                if garage_name == "Team Alpha":
+                    self.engine_upgrade_level = car_upgrades.get("engine", 0)
+                    self.tires_upgrade_level = car_upgrades.get("tires", 0)
+                    self.aero_upgrade_level = car_upgrades.get("aero", 0)
                 
                 # Update car performance based on loaded setup and upgrades
                 car.update_performance_from_setup()
@@ -295,47 +310,76 @@ class Game:
                 elif self.state == STATE_MANUFACTURER_SELECTION:
                     # Check if Back to Garage button was clicked
                     if self.back_button_rect.collidepoint(event.pos):
-                        # Before returning to customization screen, select the current manufacturer
-                        if hasattr(self, 'ui'):
-                            # Get the currently displayed manufacturer
-                            selected_manufacturer = self.ui.manufacturer_ui.get_selected_manufacturer()
+                        try:
+                            # Before returning to customization screen, select the current manufacturer
+                            if hasattr(self, 'ui'):
+                                # Get the currently displayed manufacturer
+                                selected_manufacturer = self.ui.manufacturer_ui.get_selected_manufacturer()
+                                
+                                # Save the current car's setup and upgrades before switching
+                                self.save_current_player_stats()
+                                
+                                # Get the selected car and its garage name
+                                car = self.cars[self.selected_car_index]
+                                new_manufacturer = selected_manufacturer["name"]
+                                garage_name = car.name
+                                
+                                # Update only the currently selected car with the new manufacturer
+                                car.update_manufacturer(new_manufacturer)
+                                
+                                # Update team manufacturer in game if first car is selected
+                                if car.name == "Team Alpha":
+                                    self.player_team_manufacturer = new_manufacturer
+                                
+                                # Import functions for garage data
+                                from player_data import get_player_garage, update_player_garage, get_car_upgrades
+                                
+                                # Load the existing garage data for this car
+                                garage_data = get_player_garage(self.player_name, car.name)
+                                
+                                # Update the manufacturer
+                                garage_data["manufacturer"] = new_manufacturer
+                                
+                                # Make sure we have upgrades for this manufacturer in this garage
+                                if "cars" not in garage_data:
+                                    garage_data["cars"] = {}
+                                
+                                if new_manufacturer not in garage_data["cars"]:
+                                    garage_data["cars"][new_manufacturer] = {
+                                        "upgrades": {"engine": 0, "tires": 0, "aero": 0}
+                                    }
+                                
+                                # Get the car-specific upgrades for the new manufacturer
+                                car_upgrades = get_car_upgrades(self.player_name, garage_name, new_manufacturer)
+                                
+                                # Update our in-memory car_upgrades dictionary
+                                if garage_name not in self.car_upgrades:
+                                    self.car_upgrades[garage_name] = {}
+                                
+                                self.car_upgrades[garage_name] = car_upgrades
+                                
+                                # Save the updated garage data
+                                update_player_garage(
+                                    self.player_name,
+                                    car.name,
+                                    new_manufacturer,
+                                    garage_data["setup"],
+                                    car_upgrades
+                                )
+                                
+                                # Update car performance based on new manufacturer and upgrades
+                                car.update_performance_from_setup()
                             
-                            # Save the current car's setup and upgrades before switching
-                            self.save_current_player_stats()
-                            
-                            # Get the selected car and its garage name
-                            car = self.cars[self.selected_car_index]
-                            new_manufacturer = selected_manufacturer["name"]
-                            
-                            # Update only the currently selected car with the new manufacturer
-                            car.update_manufacturer(new_manufacturer)
-                            
-                            # Update team manufacturer in game if first car is selected
-                            if car.name == "Team Alpha":
-                                self.player_team_manufacturer = new_manufacturer
-                            
-                            # Import functions for garage data
-                            from player_data import get_player_garage, update_player_garage
-                            
-                            # Load the existing garage data for this car
-                            garage_data = get_player_garage(self.player_name, car.name)
-                            
-                            # Update the manufacturer
-                            garage_data["manufacturer"] = new_manufacturer
-                            
-                            # Save the updated garage data
-                            update_player_garage(
-                                self.player_name,
-                                car.name,
-                                new_manufacturer,
-                                garage_data["setup"],
-                                garage_data["upgrades"]
-                            )
-                        
-                        # Return to customization screen
-                        self.state = STATE_CUSTOMIZATION
-                        self.message = f"Selected {selected_manufacturer['name']} for {car.name}"
-                        self.message_timer = 120
+                            # Return to customization screen
+                            self.state = STATE_CUSTOMIZATION
+                            self.message = f"Selected {selected_manufacturer['name']} for {car.name}"
+                            self.message_timer = 120
+                        except Exception as e:
+                            print(f"Error: {e}")
+                            # Return to customization screen even if there was an error
+                            self.state = STATE_CUSTOMIZATION
+                            self.message = "Error selecting manufacturer, using default settings"
+                            self.message_timer = 180
                     
                     # Check if left arrow was clicked
                     if self.left_arrow_rect.collidepoint(event.pos):
@@ -432,43 +476,73 @@ class Game:
                 
                 # Handle return/enter key to select manufacturer and return to customization screen
                 if event.key == pygame.K_RETURN and self.state == STATE_MANUFACTURER_SELECTION:
-                    # Get selected manufacturer from UI
-                    if hasattr(self, 'ui'):
-                        selected_manufacturer = self.ui.manufacturer_ui.get_selected_manufacturer()
-                        
-                        # Save the current setup before switching manufacturer
-                        self.save_current_player_stats()
-                        
-                        # Get the selected car and apply the new manufacturer
-                        car = self.cars[self.selected_car_index]
-                        new_manufacturer = selected_manufacturer["name"]
-                        car.update_manufacturer(new_manufacturer)
-                        
-                        # Update team manufacturer in game if the first car is selected
-                        if car.name == "Team Alpha":
-                            self.player_team_manufacturer = new_manufacturer
+                    try:
+                        # Get selected manufacturer from UI
+                        if hasattr(self, 'ui'):
+                            selected_manufacturer = self.ui.manufacturer_ui.get_selected_manufacturer()
                             
-                        # Import functions for garage data
-                        from player_data import get_player_garage, update_player_garage
+                            # Save the current setup before switching manufacturer
+                            self.save_current_player_stats()
+                            
+                            # Get the selected car and apply the new manufacturer
+                            car = self.cars[self.selected_car_index]
+                            new_manufacturer = selected_manufacturer["name"]
+                            garage_name = car.name
+                            car.update_manufacturer(new_manufacturer)
+                            
+                            # Update team manufacturer in game if the first car is selected
+                            if car.name == "Team Alpha":
+                                self.player_team_manufacturer = new_manufacturer
+                                
+                            # Import functions for garage data
+                            from player_data import get_player_garage, update_player_garage, get_car_upgrades
+                            
+                            # Load the existing garage data for this car
+                            garage_data = get_player_garage(self.player_name, car.name)
+                            
+                            # Update the manufacturer in the garage data
+                            garage_data["manufacturer"] = new_manufacturer
+                            
+                            # Make sure we have upgrades for this manufacturer in this garage
+                            if "cars" not in garage_data:
+                                garage_data["cars"] = {}
+                            
+                            if new_manufacturer not in garage_data["cars"]:
+                                garage_data["cars"][new_manufacturer] = {
+                                    "upgrades": {"engine": 0, "tires": 0, "aero": 0}
+                                }
+                            
+                            # Get the car-specific upgrades for the new manufacturer
+                            car_upgrades = get_car_upgrades(self.player_name, garage_name, new_manufacturer)
+                            
+                            # Update our in-memory car_upgrades dictionary
+                            if garage_name not in self.car_upgrades:
+                                self.car_upgrades[garage_name] = {}
+                            
+                            self.car_upgrades[garage_name] = car_upgrades
+                            
+                            # Save the updated garage data
+                            update_player_garage(
+                                self.player_name,
+                                car.name,
+                                new_manufacturer,
+                                garage_data["setup"],
+                                car_upgrades
+                            )
+                            
+                            # Update car performance based on the new manufacturer and upgrades
+                            car.update_performance_from_setup()
+                            
+                            # Return to customization screen
+                            self.state = STATE_CUSTOMIZATION
+                            self.message = f"Selected {selected_manufacturer['name']} for {car.name}"
+                            self.message_timer = 180
                         
-                        # Load the existing garage data for this car
-                        garage_data = get_player_garage(self.player_name, car.name)
-                        
-                        # Update the manufacturer in the garage data
-                        garage_data["manufacturer"] = new_manufacturer
-                        
-                        # Save the updated garage data
-                        update_player_garage(
-                            self.player_name,
-                            car.name,
-                            new_manufacturer,
-                            garage_data["setup"],
-                            garage_data["upgrades"]
-                        )
-                        
-                        # Return to customization screen
+                    except Exception as e:
+                        print(f"Error: {e}")
+                        # Return to customization screen even if there was an error
                         self.state = STATE_CUSTOMIZATION
-                        self.message = f"Selected {selected_manufacturer['name']} for {car.name}"
+                        self.message = "Error selecting manufacturer, using default settings"
                         self.message_timer = 180
                     
                 # Engineer commands
