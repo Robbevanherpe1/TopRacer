@@ -405,12 +405,7 @@ class Game:
             
             if event.type == pygame.KEYDOWN:
                 if event.key == pygame.K_SPACE:
-                    if self.state == STATE_START_SCREEN:
-                        # Now go to customization screen instead of directly to racing
-                        self.state = STATE_CUSTOMIZATION
-                        self.message = "Customize your car before racing!"
-                        self.message_timer = 180
-                    elif self.state == STATE_RACING:
+                    if self.state == STATE_RACING:
                         self.state = STATE_PAUSE
                         self.message = "Game Paused!"
                         self.message_timer = 180
@@ -418,6 +413,7 @@ class Game:
                         self.state = STATE_RACING
                         self.message = "Race resumed!"
                         self.message_timer = 180
+                    
                         
                 # Handle Escape key to return to customization screen from racing
                 if event.key == pygame.K_ESCAPE:
@@ -586,6 +582,11 @@ class Game:
             if event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:  # Left mouse click
                 if self.state == STATE_START_SCREEN:
                     mouse_pos = pygame.mouse.get_pos()
+
+                    if self.start_button_rect.collidepoint(mouse_pos):
+                        self.state = STATE_CUSTOMIZATION
+                        self.message = "Select your car and manufacturer"
+                        self.message_timer = 180
                     
                     # Check if clicked on Add Player button
                     if self.add_player_button_rect.collidepoint(mouse_pos):
