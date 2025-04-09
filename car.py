@@ -101,6 +101,7 @@ class Car:
         # Add pit road flag - cars will take the pit road on lap 3
         self.take_pit_road = False
         self.pit_road_lap = 3  # Hardcoded to take pit road on lap 3
+        self.pit_road_debug_printed = False  # Debug flag to track pit road messages
         
         # Race engineer commands
         self.push_mode = False
@@ -196,6 +197,9 @@ class Car:
             # Enable pit road when approaching the pit entrance on lap 3
             self.take_pit_road = True
             self.track.use_pit_road = True
+            if not self.pit_road_debug_printed:
+                print(f"{self.name} is taking the pit road on lap {self.laps + 1}")
+                self.pit_road_debug_printed = True
         elif self.laps >= self.pit_road_lap and self.current_waypoint > 5:
             # Disable pit road after exiting it on lap 3
             self.take_pit_road = False
