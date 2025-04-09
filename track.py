@@ -19,6 +19,10 @@ class Track:
         self.load_textures()
         self.load_from_csv(csv_path)
         self.define_waypoints()
+        # Initialize pit road waypoints
+        self.define_pit_road_waypoints()
+        # Flag to enable/disable pit road
+        self.use_pit_road = False
         
     def load_textures(self):
         """Load and prepare all textures used for the track tiles"""
@@ -132,12 +136,55 @@ class Track:
             (start_x + 7, start_y - 12),#25
             (start_x + 7, start_y - 7),#26
             (start_x + 5, start_y - 5),#27
-            (start_x, start_y - 6),#28
-            (start_x + 0, start_y - 3),#29  
+            (start_x +1, start_y - 7),#28
+            (start_x + 0, start_y - 4),#29  
             (start_x + 3, start_y - 1),#30
         ]
         
         print(f"Defined {len(self.waypoints)} waypoints")
+    
+    def define_pit_road_waypoints(self):
+        """Define pit road waypoints that connect from the second last waypoint (29) to the 5th waypoint (5)"""
+        # Find the start line coordinates to use as reference like in define_waypoints
+        start_x, start_y = None, None
+        
+        # Look for the starting position (Finish line tile)
+        for y in range(self.grid_height):
+            for x in range(self.grid_width):
+                if self.grid[y][x] == FINISH_LINE:
+                    start_x, start_y = x, y
+                    break
+            if start_x is not None:
+                break
+        
+        # If no finish line is found, use the default from the waypoints
+        if start_x is None and len(self.waypoints) > 0:
+            # Extract start_x and start_y from first waypoint
+            first_waypoint = self.waypoints[0]
+            start_x = first_waypoint[0] - 12  # Reverse the offset from define_waypoints
+            start_y = first_waypoint[1] + 1   # Reverse the offset from define_waypoints
+        
+        # If we still don't have a starting point, use a default
+        if start_x is None:
+            start_x, start_y = self.grid_width // 2, self.grid_height // 2
+        
+        # Create pit road waypoints that connect waypoint 29 to waypoint 5
+        # These are custom points that form a pit road path
+        self.pit_road_waypoints = [
+            # Start from waypoint 29 - second last waypoint
+            (start_x + 1, start_y - 2),  # Starting point (same as waypoint 29)
+            (start_x + 1, start_y),  # Move left into pit entrance
+            (start_x + 3, start_y +2), # Continue along pit lane
+            (start_x + 5, start_y + 3), # Turn downward
+            (start_x + 10, start_y + 3), # Continue pit lane
+            (start_x + 15, start_y + 3),  # Continue pit lane
+            (start_x + 20, start_y + 3), # Turn towards exit
+            (start_x + 23, start_y + 2),# Continue towards pit exit
+            (start_x + 26, start_y + 4), # Continue turning
+            (start_x + 27, start_y + 10),# End at waypoint 5
+        ]
+        
+        print(f"Defined {len(self.pit_road_waypoints)} pit road waypoints")
     
     def is_wall(self, x, y):
         """Check if the given tile is a wall"""
@@ -360,6 +407,8 @@ class Track:
         # Colors to use for waypoints
         waypoint_color = (255, 255, 0)  # Yellow
         connection_color = (0, 200, 200)  # Cyan
+        pit_waypoint_color = (255, 0, 0)  # Red for pit waypoints
+        pit_connection_color = (200, 0, 200)  # Purple for pit connections
         
         # First draw connections between waypoints
         for i in range(len(self.waypoints)):
@@ -390,6 +439,62 @@ class Track:
             number_text = waypoint_font.render(str(i), True, (0, 0, 0))
             number_rect = number_text.get_rect(center=(screen_x, screen_y))
             surface.blit(number_text, number_rect)
+        
+        # Draw pit road waypoints if they exist
+        if hasattr(self, 'pit_road_waypoints') and self.pit_road_waypoints:
+            # Draw connections between pit road waypoints
+            for i in range(len(self.pit_road_waypoints) - 1):
+                current_wp = self.pit_road_waypoints[i]
+                next_wp = self.pit_road_waypoints[i + 1]
+                
+                # Calculate screen positions with camera offset
+                current_x = current_wp[0] * self.tile_size + self.tile_size // 2 - camera_x
+                current_y = current_wp[1] * self.tile_size + self.tile_size // 2 - camera_y
+                next_x = next_wp[0] * self.tile_size + self.tile_size // 2 - camera_x
+                next_y = next_wp[1] * self.tile_size + self.tile_size // 2 - camera_y
+                
+                # Draw a line connecting the pit waypoints
+                pygame.draw.line(surface, pit_connection_color, (current_x, current_y), (next_x, next_y), 2)
+            
+            # Draw each pit waypoint
+            for i, waypoint in enumerate(self.pit_road_waypoints):
+                # Calculate screen position with camera offset
+                screen_x = waypoint[0] * self.tile_size + self.tile_size // 2 - camera_x
+                screen_y = waypoint[1] * self.tile_size + self.tile_size // 2 - camera_y
+                
+                # Draw pit waypoint circle in different color
+                pygame.draw.circle(surface, pit_waypoint_color, (screen_x, screen_y), 5)
+                
+                # Draw pit waypoint number
+                waypoint_font = pygame.font.Font(None, 18)
+                number_text = waypoint_font.render(f"P{i}", True, (0, 0, 0))
+                number_rect = number_text.get_rect(center=(screen_x, screen_y))
+                surface.blit(number_text, number_rect)
+            
+            # Draw connections between main track and pit road
+            # Connect waypoint 29 (second last) to first pit waypoint
+            if len(self.waypoints) > 29 and len(self.pit_road_waypoints) > 0:
+                # Start of pit road
+                main_wp = self.waypoints[29]
+                pit_wp = self.pit_road_waypoints[0]
+                
+                main_x = main_wp[0] * self.tile_size + self.tile_size // 2 - camera_x
+                main_y = main_wp[1] * self.tile_size + self.tile_size // 2 - camera_y
+                pit_x = pit_wp[0] * self.tile_size + self.tile_size // 2 - camera_x
+                pit_y = pit_wp[1] * self.tile_size + self.tile_size // 2 - camera_y
+                
+                pygame.draw.line(surface, pit_connection_color, (main_x, main_y), (pit_x, pit_y), 2)
+                
+                # End of pit road
+                main_wp = self.waypoints[5]
+                pit_wp = self.pit_road_waypoints[-1]
+                
+                main_x = main_wp[0] * self.tile_size + self.tile_size // 2 - camera_x
+                main_y = main_wp[1] * self.tile_size + self.tile_size // 2 - camera_y
+                pit_x = pit_wp[0] * self.tile_size + self.tile_size // 2 - camera_x
+                pit_y = pit_wp[1] * self.tile_size + self.tile_size // 2 - camera_y
+                
+                pygame.draw.line(surface, pit_connection_color, (pit_x, pit_y), (main_x, main_y), 2)
     
     def get_closest_waypoint(self, pos):
         """Get the index of the closest waypoint to a given position"""
@@ -410,12 +515,36 @@ class Track:
                 
         return closest_idx
 
-    def get_waypoint_position(self, index):
-        """Return the world coordinates for a specific waypoint"""
+    def get_waypoint_position(self, index, use_pit_road=False):
+        """Return the world coordinates for a specific waypoint, with pit road option"""
+        # Check if we're using the pit road and requesting a waypoint that would be replaced by it
+        if use_pit_road and hasattr(self, 'use_pit_road') and self.use_pit_road:
+            # If we're between waypoints 29 and 5
+            if index == 30 or index == 0 or (index >= 1 and index <= 5):
+                # Calculate the corresponding pit road waypoint
+                if index == 30:
+                    pit_index = 0  # Start of pit road
+                elif index == 0:
+                    pit_index = 2  # Middle of pit entrance  
+                elif index >= 1 and index <= 4:
+                    # Distribute the remaining waypoints along the pit road
+                    pit_index = 3 + index
+                else:  # index == 5
+                    pit_index = len(self.pit_road_waypoints) - 1  # End of pit road
+                
+                # Make sure the pit index is valid
+                pit_index = min(pit_index, len(self.pit_road_waypoints) - 1)
+                
+                waypoint = self.pit_road_waypoints[pit_index]
+                return (waypoint[0] * self.tile_size + self.tile_size // 2,
+                        waypoint[1] * self.tile_size + self.tile_size // 2)
+        
+        # Regular waypoint handling
         if 0 <= index < len(self.waypoints):
             waypoint = self.waypoints[index]
             return (waypoint[0] * self.tile_size + self.tile_size // 2, 
                     waypoint[1] * self.tile_size + self.tile_size // 2)
+        
         # Default to start position if waypoint index is invalid
         return self.get_start_position()
     

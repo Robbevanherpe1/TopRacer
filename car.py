@@ -98,6 +98,10 @@ class Car:
         self.last_lap_time = 0
         self.lap_start_time = pygame.time.get_ticks()
         
+        # Add pit road flag - cars will take the pit road on lap 3
+        self.take_pit_road = False
+        self.pit_road_lap = 3  # Hardcoded to take pit road on lap 3
+        
         # Race engineer commands
         self.push_mode = False
         self.push_remaining = 0
@@ -187,6 +191,16 @@ class Car:
                 
             return
         
+        # Check if we should enable pit road on lap 3
+        if self.laps == self.pit_road_lap - 1 and self.current_waypoint >= 29:
+            # Enable pit road when approaching the pit entrance on lap 3
+            self.take_pit_road = True
+            self.track.use_pit_road = True
+        elif self.laps >= self.pit_road_lap and self.current_waypoint > 5:
+            # Disable pit road after exiting it on lap 3
+            self.take_pit_road = False
+            self.track.use_pit_road = False
+        
         # Update push mode counter
         if self.push_mode:
             self.push_remaining -= 1
@@ -226,10 +240,9 @@ class Car:
             self.stuck_counter = 0
             self.is_stuck = False
         
-        # AI driving logic - Get current target waypoint coordinates
-        target_waypoint = self.track.waypoints[self.current_waypoint]
-        waypoint_x = target_waypoint[0] * self.track.tile_size + self.track.tile_size // 2
-        waypoint_y = target_waypoint[1] * self.track.tile_size + self.track.tile_size // 2
+        # AI driving logic - Get current target waypoint coordinates using pit road if active
+        target_waypoint_pos = self.track.get_waypoint_position(self.current_waypoint, self.take_pit_road)
+        waypoint_x, waypoint_y = target_waypoint_pos
         
         # Calculate angle to target waypoint
         dx = waypoint_x - self.x
@@ -333,15 +346,13 @@ class Car:
         
         # Advanced racing line calculation - look ahead by 2 waypoints for better anticipation
         next_wp_idx = (self.current_waypoint + 1) % len(self.track.waypoints)
-        next_waypoint = self.track.waypoints[next_wp_idx]
-        next_wp_x = next_waypoint[0] * self.track.tile_size + self.track.tile_size // 2
-        next_wp_y = next_waypoint[1] * self.track.tile_size + self.track.tile_size // 2
+        next_wp_pos = self.track.get_waypoint_position(next_wp_idx, self.take_pit_road)
+        next_wp_x, next_wp_y = next_wp_pos
         
         # Also look at waypoint after next for better planning
         next2_wp_idx = (self.current_waypoint + 2) % len(self.track.waypoints)
-        next2_waypoint = self.track.waypoints[next2_wp_idx]
-        next2_wp_x = next2_waypoint[0] * self.track.tile_size + self.track.tile_size // 2
-        next2_wp_y = next2_waypoint[1] * self.track.tile_size + self.track.tile_size // 2
+        next2_wp_pos = self.track.get_waypoint_position(next2_wp_idx, self.take_pit_road)
+        next2_wp_x, next2_wp_y = next2_wp_pos
         
         # Calculate angle between current waypoint and next waypoint
         next_dx = next_wp_x - waypoint_x
