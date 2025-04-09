@@ -150,7 +150,7 @@ class Game:
             self.player_races_won
         )
         
-        # Save data for each engineer car individually based on their name
+        # Save data for each engineer car individually based on their name (garage name)
         for car_idx in self.engineer_car_indices:
             car = self.cars[car_idx]
             garage_name = car.name  # Team Alpha or Team Omega
@@ -158,14 +158,14 @@ class Game:
             # Create a dictionary with the car's setup
             setup = car.setup.copy()
             
-            # Each garage car needs its own upgrades
+            # Get car-specific upgrades for this garage
             upgrades = self.car_upgrades.get(garage_name, {
                 "engine": 0,
                 "tires": 0,
                 "aero": 0
             })
             
-            # Save the garage-specific car data
+            # Save the garage-specific car data with current manufacturer and upgrades
             update_player_garage(
                 self.player_name,
                 garage_name,

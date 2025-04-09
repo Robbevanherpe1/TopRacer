@@ -320,11 +320,22 @@ class CustomizationUI(BaseUI):
         upgrade_desc_text = self.font.render(upgrade_description, True, (220, 220, 255))
         self.screen.blit(upgrade_desc_text, (upgrade_panel_rect.x + 20, upgrade_panel_rect.y + 60))
         
-        # Define permanent upgrades to display
+        # Get the current selected car (for showing its specific upgrades)
+        car = game.cars[game.selected_car_index]
+        garage_name = car.name  # Team Alpha or Team Omega
+        
+        # Make sure car_upgrades contains this garage
+        if garage_name not in game.car_upgrades:
+            game.car_upgrades[garage_name] = {"engine": 0, "tires": 0, "aero": 0}
+        
+        # Get car-specific upgrades
+        car_upgrades = game.car_upgrades[garage_name]
+        
+        # Define permanent upgrades to display for this specific car
         permanent_upgrades = [
-            {"name": "Engine", "level": game.engine_upgrade_level, "description": "Improves acceleration"},
-            {"name": "Tires", "level": game.tires_upgrade_level, "description": "Improves handling"},
-            {"name": "Aerodynamics", "level": game.aero_upgrade_level, "description": "Improves aerodynamics"},
+            {"name": "Engine", "level": car_upgrades.get('engine', 0), "description": "Improves acceleration"},
+            {"name": "Tires", "level": car_upgrades.get('tires', 0), "description": "Improves handling"},
+            {"name": "Aerodynamics", "level": car_upgrades.get('aero', 0), "description": "Improves aerodynamics"},
         ]
         
         # Draw each upgrade with level indicator and upgrade button
@@ -345,7 +356,6 @@ class CustomizationUI(BaseUI):
         in_active_race = game.state == STATE_RACING or game.state == STATE_PAUSE
         
         # Store reference to car for upgrades
-        car = game.cars[game.selected_car_index]
         if not hasattr(car, 'game'):
             car.game = game
         
@@ -419,25 +429,21 @@ class CustomizationUI(BaseUI):
                 
                 # Handle button clicks
                 if button_hovered and mouse_pressed and can_afford and not in_active_race:
-                    # Purchase the upgrade
+                    # Purchase the upgrade for this specific car (garage)
                     if upgrade['name'] == "Engine":
-                        game.engine_upgrade_level += 1
+                        game.car_upgrades[garage_name]['engine'] += 1
                         game.player_points -= cost
                     elif upgrade['name'] == "Tires":
-                        game.tires_upgrade_level += 1
+                        game.car_upgrades[garage_name]['tires'] += 1
                         game.player_points -= cost
                     elif upgrade['name'] == "Aerodynamics":
-                        game.aero_upgrade_level += 1
+                        game.car_upgrades[garage_name]['aero'] += 1
                         game.player_points -= cost
                     
                     # Update car performance with new upgrades
-                    for car_idx in game.engineer_car_indices:
-                        car = game.cars[car_idx]
-                        if not hasattr(car, 'game'):
-                            car.game = game
-                        car.update_performance_from_setup()
+                    car.update_performance_from_setup()
                     
-                    game.message = f"{upgrade['name']} upgraded to level {upgrade['level'] + 1}!"
+                    game.message = f"{garage_name}'s {upgrade['name']} upgraded to level {upgrade['level'] + 1}!"
                     game.message_timer = 180
                 
             # Move to next upgrade
