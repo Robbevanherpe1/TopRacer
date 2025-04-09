@@ -42,10 +42,22 @@ def add_player(name):
             "points": 0,
             "team_rating": 0,
             "races_won": 0,
-            "upgrades": {
-                "engine": 0,
-                "tires": 0,
-                "aero": 0
+            "current_manufacturer": "Ferrari",  # Default manufacturer
+            "cars": {
+                "Ferrari": {  # Default car
+                    "setup": {
+                        "Engine": 5,
+                        "Tires": 5,
+                        "Aerodynamics": 5,
+                        "Handling": 5,
+                        "Brakes": 5
+                    },
+                    "upgrades": {
+                        "engine": 0,
+                        "tires": 0,
+                        "aero": 0
+                    }
+                }
             }
         }
         save_players(players)
@@ -71,12 +83,83 @@ def update_player_stats(name, points, team_rating, races_won, upgrades=None):
     players[name]["team_rating"] = team_rating
     players[name]["races_won"] = races_won
     
-    # Save car upgrades
+    # Get current manufacturer
+    current_manufacturer = players[name].get("current_manufacturer", "Ferrari")
+    
+    # Save car upgrades to the current manufacturer's car
     if upgrades:
-        if "upgrades" not in players[name]:
-            players[name]["upgrades"] = {}
-        players[name]["upgrades"]["engine"] = upgrades.get("engine", 0)
-        players[name]["upgrades"]["tires"] = upgrades.get("tires", 0)
-        players[name]["upgrades"]["aero"] = upgrades.get("aero", 0)
+        # Make sure the cars structure exists
+        if "cars" not in players[name]:
+            players[name]["cars"] = {}
+            
+        # Make sure current manufacturer exists in cars
+        if current_manufacturer not in players[name]["cars"]:
+            players[name]["cars"][current_manufacturer] = {
+                "setup": {
+                    "Engine": 5,
+                    "Tires": 5,
+                    "Aerodynamics": 5,
+                    "Handling": 5,
+                    "Brakes": 5
+                },
+                "upgrades": {
+                    "engine": 0,
+                    "tires": 0,
+                    "aero": 0
+                }
+            }
+        
+        # Update upgrades for current manufacturer's car
+        players[name]["cars"][current_manufacturer]["upgrades"]["engine"] = upgrades.get("engine", 0)
+        players[name]["cars"][current_manufacturer]["upgrades"]["tires"] = upgrades.get("tires", 0)
+        players[name]["cars"][current_manufacturer]["upgrades"]["aero"] = upgrades.get("aero", 0)
+    
+    save_players(players)
+
+def update_player_car(name, manufacturer, setup=None, upgrades=None):
+    """
+    Update or add a car for a player with its setup and upgrades
+    
+    Args:
+        name (str): Player name
+        manufacturer (str): Car manufacturer name
+        setup (dict, optional): Car setup values for engine, tires, etc.
+        upgrades (dict, optional): Upgrade levels for engine, tires, and aero
+    """
+    players = load_players()
+    if name not in players:
+        add_player(name)
+    
+    # Update current manufacturer
+    players[name]["current_manufacturer"] = manufacturer
+    
+    # Initialize cars dict if it doesn't exist
+    if "cars" not in players[name]:
+        players[name]["cars"] = {}
+    
+    # Initialize manufacturer entry if it doesn't exist
+    if manufacturer not in players[name]["cars"]:
+        players[name]["cars"][manufacturer] = {
+            "setup": {
+                "Engine": 5,
+                "Tires": 5,
+                "Aerodynamics": 5,
+                "Handling": 5,
+                "Brakes": 5
+            },
+            "upgrades": {
+                "engine": 0,
+                "tires": 0,
+                "aero": 0
+            }
+        }
+    
+    # Update setup if provided
+    if setup:
+        players[name]["cars"][manufacturer]["setup"] = setup
+    
+    # Update upgrades if provided
+    if upgrades:
+        players[name]["cars"][manufacturer]["upgrades"] = upgrades
     
     save_players(players)

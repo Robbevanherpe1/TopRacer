@@ -4,7 +4,7 @@ import math
 from track import Track
 from car import Car
 from constants import *
-from player_data import load_players, update_player_stats
+from player_data import load_players, update_player_stats, update_player_car
 
 class Game:
     def __init__(self, screen):
@@ -136,11 +136,39 @@ class Game:
         
     def save_current_player_stats(self):
         """Save the current player's stats to file"""
+        # Import the updated player_data functions
+        from player_data import update_player_stats, update_player_car
+        
+        # First save the general player stats using the existing function
         update_player_stats(
             self.player_name,
             self.player_points,
             self.player_team_rating,
             self.player_races_won
+        )
+        
+        # Now save car-specific data for the current manufacturer
+        manufacturer = self.player_team_manufacturer
+        
+        # Create a dictionary with the current setup from one of the engineer cars
+        # We use the first engineer car's setup as the saved setup
+        setup = None
+        if self.engineer_car_indices:
+            setup = self.cars[self.engineer_car_indices[0]].setup.copy()
+        
+        # Create a dictionary with the current upgrade levels
+        upgrades = {
+            "engine": self.engine_upgrade_level,
+            "tires": self.tires_upgrade_level,
+            "aero": self.aero_upgrade_level
+        }
+        
+        # Save the car-specific data
+        update_player_car(
+            self.player_name,
+            manufacturer,
+            setup,
+            upgrades
         )
     
     def select_player(self, name):
@@ -151,6 +179,39 @@ class Game:
             self.player_team_rating = self.players[name]["team_rating"]
             self.player_races_won = self.players[name]["races_won"]
             self.player_username = name  # Use player name as username
+            
+            # Load car-specific data if available
+            if "current_manufacturer" in self.players[name]:
+                manufacturer = self.players[name]["current_manufacturer"]
+                self.player_team_manufacturer = manufacturer
+                
+                # Update the manufacturer for engineer cars
+                for car_idx in self.engineer_car_indices:
+                    self.cars[car_idx].update_manufacturer(manufacturer)
+            
+            # Load car-specific upgrades and setup if available
+            if "cars" in self.players[name]:
+                cars_data = self.players[name]["cars"]
+                manufacturer = self.player_team_manufacturer
+                
+                if manufacturer in cars_data:
+                    # Load upgrades for this manufacturer
+                    if "upgrades" in cars_data[manufacturer]:
+                        self.engine_upgrade_level = cars_data[manufacturer]["upgrades"].get("engine", 0)
+                        self.tires_upgrade_level = cars_data[manufacturer]["upgrades"].get("tires", 0)
+                        self.aero_upgrade_level = cars_data[manufacturer]["upgrades"].get("aero", 0)
+                    
+                    # Load setup for engineer cars
+                    if "setup" in cars_data[manufacturer]:
+                        setup = cars_data[manufacturer]["setup"]
+                        for car_idx in self.engineer_car_indices:
+                            # Apply the setup to each engineer car
+                            for key, value in setup.items():
+                                if key in self.cars[car_idx].setup:
+                                    self.cars[car_idx].setup[key] = value
+                            
+                            # Update performance based on loaded setup
+                            self.cars[car_idx].update_performance_from_setup()
     
     def process_events(self, events):
         """Process pygame events passed from the main loop"""
@@ -235,12 +296,53 @@ class Game:
                             # Get the currently displayed manufacturer
                             selected_manufacturer = self.ui.manufacturer_ui.get_selected_manufacturer()
                             
+                            # Save the current car's setup and upgrades before switching manufacturers
+                            self.save_current_player_stats()
+                            
                             # Update the selected car with the new manufacturer
                             car = self.cars[self.selected_car_index]
-                            car.update_manufacturer(selected_manufacturer["name"])
+                            new_manufacturer = selected_manufacturer["name"]
+                            car.update_manufacturer(new_manufacturer)
                             
                             # Update team manufacturer in game
-                            self.player_team_manufacturer = selected_manufacturer["name"]
+                            self.player_team_manufacturer = new_manufacturer
+                            
+                            # Load saved data for the new manufacturer if available
+                            from player_data import load_players
+                            players = load_players()
+                            if self.player_name in players and "cars" in players[self.player_name]:
+                                cars_data = players[self.player_name]["cars"]
+                                
+                                # Load data for the new manufacturer if available
+                                if new_manufacturer in cars_data:
+                                    # Load upgrades
+                                    if "upgrades" in cars_data[new_manufacturer]:
+                                        self.engine_upgrade_level = cars_data[new_manufacturer]["upgrades"].get("engine", 0)
+                                        self.tires_upgrade_level = cars_data[new_manufacturer]["upgrades"].get("tires", 0)
+                                        self.aero_upgrade_level = cars_data[new_manufacturer]["upgrades"].get("aero", 0)
+                                    
+                                    # Load setup for engineer cars
+                                    if "setup" in cars_data[new_manufacturer]:
+                                        setup = cars_data[new_manufacturer]["setup"]
+                                        for car_idx in self.engineer_car_indices:
+                                            # Apply the setup to each engineer car
+                                            for key, value in setup.items():
+                                                if key in self.cars[car_idx].setup:
+                                                    self.cars[car_idx].setup[key] = value
+                                            
+                                            # Update car performance based on new setup
+                                            self.cars[car_idx].update_performance_from_setup()
+                                else:
+                                    # If no data exists for this manufacturer, reset to default
+                                    for car_idx in self.engineer_car_indices:
+                                        for key in self.cars[car_idx].setup:
+                                            self.cars[car_idx].setup[key] = 5
+                                        self.cars[car_idx].update_performance_from_setup()
+                                    
+                                    # Reset upgrade levels for new manufacturer
+                                    self.engine_upgrade_level = 0
+                                    self.tires_upgrade_level = 0
+                                    self.aero_upgrade_level = 0
                         
                         # Return to customization screen
                         self.state = STATE_CUSTOMIZATION
@@ -346,12 +448,56 @@ class Game:
                     if hasattr(self, 'ui'):
                         selected_manufacturer = self.ui.manufacturer_ui.get_selected_manufacturer()
                         
+                        # Save the current car's setup and upgrades before switching manufacturers
+                        self.save_current_player_stats()
+                        
                         # Update the selected car with the new manufacturer
                         car = self.cars[self.selected_car_index]
-                        car.update_manufacturer(selected_manufacturer["name"])
+                        new_manufacturer = selected_manufacturer["name"]
+                        
+                        # Update all engineer cars to use the same manufacturer
+                        for car_idx in self.engineer_car_indices:
+                            self.cars[car_idx].update_manufacturer(new_manufacturer)
                         
                         # Update team manufacturer in game
-                        self.player_team_manufacturer = selected_manufacturer["name"]
+                        self.player_team_manufacturer = new_manufacturer
+                        
+                        # Load saved data for the new manufacturer if available
+                        from player_data import load_players
+                        players = load_players()
+                        if self.player_name in players and "cars" in players[self.player_name]:
+                            cars_data = players[self.player_name]["cars"]
+                            
+                            # Load data for the new manufacturer if available
+                            if new_manufacturer in cars_data:
+                                # Load upgrades
+                                if "upgrades" in cars_data[new_manufacturer]:
+                                    self.engine_upgrade_level = cars_data[new_manufacturer]["upgrades"].get("engine", 0)
+                                    self.tires_upgrade_level = cars_data[new_manufacturer]["upgrades"].get("tires", 0)
+                                    self.aero_upgrade_level = cars_data[new_manufacturer]["upgrades"].get("aero", 0)
+                                
+                                # Load setup for engineer cars
+                                if "setup" in cars_data[new_manufacturer]:
+                                    setup = cars_data[new_manufacturer]["setup"]
+                                    for car_idx in self.engineer_car_indices:
+                                        # Apply the setup to each engineer car
+                                        for key, value in setup.items():
+                                            if key in self.cars[car_idx].setup:
+                                                self.cars[car_idx].setup[key] = value
+                                        
+                                        # Update car performance based on new setup
+                                        self.cars[car_idx].update_performance_from_setup()
+                            else:
+                                # If no data exists for this manufacturer, reset to default
+                                for car_idx in self.engineer_car_indices:
+                                    for key in self.cars[car_idx].setup:
+                                        self.cars[car_idx].setup[key] = 5
+                                    self.cars[car_idx].update_performance_from_setup()
+                                
+                                # Reset upgrade levels for new manufacturer
+                                self.engine_upgrade_level = 0
+                                self.tires_upgrade_level = 0
+                                self.aero_upgrade_level = 0
                         
                         # Return to customization screen
                         self.state = STATE_CUSTOMIZATION
