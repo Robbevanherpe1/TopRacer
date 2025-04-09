@@ -1,12 +1,14 @@
 import pygame
 from tracks.constants import EMPTY, TRACK, WALL, FINISH_LINE, TRACKSIDE, CAR_SPAWN, CAR_SPAWN_POINT
 from tracks.base_track import BaseTrack
+from tracks.draw_track import DrawTrack
 from tracks.one_track import Track1
 
 class Track:
     def __init__(self, csv_path='tracks/csv/track1_2.csv'):
         self.tile_size = 40  # Increased from 30 to 40
         self.base_track = BaseTrack(self)
+        self.draw_track = DrawTrack(self)
         self.track1 = Track1(self)
         
         # Pre-load textures
@@ -17,15 +19,10 @@ class Track:
         self.define_pit_road_waypoints()
         # Flag to enable/disable pit road
         self.use_pit_road = False
-        
-    def load_textures(self):
-        """Load and prepare all textures used for the track tiles"""
-        self.base_track.load_textures()
-        
-    def load_from_csv(self, csv_path):
-        """Load track data from a CSV file"""
-        self.base_track.load_from_csv(csv_path)
-        
+
+
+    ## waitpoints track
+
     def define_waypoints(self):
         """Define waypoints based on the track layout"""
         self.track1.define_waypoints()
@@ -34,13 +31,27 @@ class Track:
         """Define pit road waypoints that connect from waypoints"""
         self.track1.define_pit_road_waypoints()
         
+    
+    ## Drawing track
+
+    def load_textures(self):
+        """Load and prepare all textures used for the track tiles"""
+        self.draw_track.load_textures()
+        
+    def load_from_csv(self, csv_path):
+        """Load track data from a CSV file"""
+        self.draw_track.load_from_csv(csv_path)
+
     def draw(self, surface, camera_x=0, camera_y=0):
         """Draw the track with camera offset applied"""
-        self.base_track.draw(surface, camera_x, camera_y)
+        self.draw_track.draw(surface, camera_x, camera_y)
         
     def draw_waypoints(self, surface, camera_x=0, camera_y=0):
         """Draw the waypoints on the track for debugging/visualization"""
-        self.base_track.draw_waypoints(surface, camera_x, camera_y)
+        self.draw_track.draw_waypoints(surface, camera_x, camera_y)
+
+
+    ## Track properties
         
     def get_start_position(self):
         """Return the starting position coordinates for cars"""
