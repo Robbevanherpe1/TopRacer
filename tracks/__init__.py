@@ -1,4 +1,3 @@
-import pygame
 from tracks.constants import EMPTY, TRACK, WALL, FINISH_LINE, TRACKSIDE, CAR_SPAWN, CAR_SPAWN_POINT
 from tracks.base_track import BaseTrack
 from tracks.draw_track import DrawTrack

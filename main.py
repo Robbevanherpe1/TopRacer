@@ -5,7 +5,6 @@ from constants import *
 from gameplay import Game
 from ui import UI  # This now uses our controller UI class
 from animation import Animation
-from tracks import Track  # Import Track from tracks package instead of track.py
 
 # Global UI instance that will be accessible to other modules
 global_ui = None

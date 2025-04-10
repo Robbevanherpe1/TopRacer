@@ -1,5 +1,3 @@
-import csv
-import pygame
 from tracks.constants import EMPTY, TRACK, TRACKSIDE, WALL, FINISH_LINE, CAR_SPAWN, CAR_SPAWN_POINT
 
 class BaseTrack:

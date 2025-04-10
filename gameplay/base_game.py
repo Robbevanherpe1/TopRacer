@@ -1,6 +1,3 @@
-import pygame
-
-
 class BaseGame:
     """Basic game functionality"""
     

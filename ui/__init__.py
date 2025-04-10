@@ -1,10 +1,8 @@
-import pygame
 from ui.customization_ui import CustomizationUI
 from ui.race_ui import RaceUI
 from ui.race_end_ui import RaceEndUI
 from ui.start_screen_ui import StartScreenUI
 from ui.manufacturer_ui import ManufacturerUI
-from ui.base_ui import BaseUI
 
 class UI:
     """Controller class that delegates to specialized UI components"""

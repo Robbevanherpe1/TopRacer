@@ -1,14 +1,9 @@
 import pygame
-import random
-import os
-import math
-import json
-import datetime
 
 from tracks import Track
 from cars import Car
 from constants import *
-from player_data import load_players, update_player_stats, update_player_car
+from player_data import load_players
 
 from gameplay.base_game import BaseGame
 from gameplay.player_game import PlayerGame
