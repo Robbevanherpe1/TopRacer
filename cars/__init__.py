@@ -8,12 +8,14 @@ from cars.setup_car import SetupCar
 
 
 class Car:
-
+    # Define available manufacturers at the class level for better maintainability
     AVAILABLE_MANUFACTURERS = [
         "Ferrari", "Bentley", "BMW", "McLaren", 
         "Mercedes", "Nissan", "Porsche", "Renault"
     ]
     
+    # Define manufacturer-specific bonuses (values are in base_car.py and setup_car.py)
+    MANUFACTURER_BONUSES = BaseCar.MANUFACTURER_BONUSES
 
     def __init__(self, track, position=None, color=(0, 0, 255), name="Player", manufacturer="Ferrari"):
         self.track = track
@@ -38,7 +40,6 @@ class Car:
         
         # Set initial angle to face the right direction towards first waypoint
         self.angle = 0  # Will be updated in initialize_car_direction()
-        self.initialize_car_direction()
         
         # Car setup properties (values from 1-10)
         self.setup = {
@@ -94,17 +95,14 @@ class Car:
         # Reference to game object for upgrades
         self.game = None
         
+        # Collision detection
+        self.crashed = False
+        self.recovery_timer = 0
+        self.recovery_grace_period = 0
         
         # Driver characteristics
         self.skill_level = random.uniform(0.8, 1.2)  # Affects driving precision
         self.aggression = random.uniform(0.7, 1.3)   # Affects speed in corners
-        
-        # Load car sprite based on manufacturer
-        self.update_manufacturer(self.manufacturer)
-        
-        # Calculate initial performance from setup
-        self.update_performance_from_setup()
-
         
         # Add path planning variables
         self.avoidance_angle = 0
@@ -115,46 +113,47 @@ class Car:
         # Add logging and debug properties
         self.debug_mode = False
         self.waypoint_detection_multiplier = 1.5  # More forgiving waypoint detection
-
-
+        
+        # Create component instances
         self.base_car = BaseCar(self)
         self.setup_car = SetupCar(self)
         self.position_car = PositionCar(self)
         self.collision_car = CollisionCar(self)
         
+        # Initialize car direction and performance
+        self.initialize_car_direction()
+        self.update_manufacturer(self.manufacturer)
+        self.update_performance_from_setup()
+        
 
-    ##base
-
+    # Base car methods
     def toggle_push_mode(self):
-        self.base_car.toggle_push_mode()
+        return self.base_car.toggle_push_mode()
             
     def draw(self, surface, camera_x=0, camera_y=0):
         self.base_car.draw(surface, camera_x, camera_y)
       
     def get_status(self):
-        self.base_car.get_status()
+        return self.base_car.get_status()
 
     def update_manufacturer(self, manufacturer):
         self.base_car.update_manufacturer(manufacturer)
     
-    ## position
-    
+    # Position car methods
     def initialize_car_direction(self):
         self.position_car.initialize_car_direction()
 
     def update(self, dt):
         self.position_car.update(dt)
     
-    ##collisons
-
+    # Collision car methods
     def check_collision(self):
-        self.collision_car.check_collision()
+        return self.collision_car.check_collision()
         
     def get_corners(self):
-        self.collision_car.get_corners()
+        return self.collision_car.get_corners()
 
-    ## setup
-       
+    # Setup car methods
     def update_performance_from_setup(self):
         self.setup_car.update_performance_from_setup()
       
@@ -163,7 +162,6 @@ class Car:
         
     def adjust_setup_balanced(self, key, new_value):
         self.setup_car.adjust_setup_balanced(key, new_value)
-       
 
-    
-       
+
+
