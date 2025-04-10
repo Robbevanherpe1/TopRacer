@@ -17,6 +17,8 @@ class EventGame:
         """Process pygame events passed from the main loop"""
         for event in events:
             if event.type == pygame.QUIT:
+                # Save the current player stats before quitting
+                self.game.save_current_player_stats()
                 self.game.running = False
                 
             # Handle window resize events
