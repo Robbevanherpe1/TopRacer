@@ -44,30 +44,30 @@ class Track1:
             
             # For now, hardcode some waypoints for the track in track1.csv
             # These should be adjusted based on the actual track layout
-            (start_x + 15, start_y - 1),  # 1
-            (start_x + 20, start_y - 1),  # 2
-            (start_x + 24, start_y),      # 3
-            (start_x + 26, start_y + 4),  # 4
-            (start_x + 27, start_y + 10), # 5
-            (start_x + 31, start_y + 12), # 6
-            (start_x + 36, start_y + 10), # 7
-            (start_x + 40, start_y + 4),  # 8
-            (start_x + 40, start_y - 2),  # 9
-            (start_x + 35, start_y - 7),  # 10
-            (start_x + 30, start_y - 10), # 11
-            (start_x + 26, start_y - 14), # 12
-            (start_x + 24, start_y - 19), # 13
-            (start_x + 20, start_y - 23), # 14
-            (start_x + 13, start_y - 23), # 15   
-            (start_x + 10, start_y - 28), # 16
-            (start_x + 7, start_y - 31),  # 17
-            (start_x + 1, start_y - 33),  # 18
-            (start_x - 16, start_y - 33), # 19
-            (start_x - 18, start_y - 30), # 20
-            (start_x - 16, start_y - 27), # 21
-            (start_x - 12, start_y - 25), # 22
-            (start_x - 6, start_y - 24),  # 23
-            (start_x + 7, start_y - 16),  # 24
+            (start_x + 15, start_y - 2),  # 1
+            (start_x + 20, start_y - 2),  # 2
+            (start_x + 24, start_y -1),      # 3
+            (start_x + 26, start_y + 3),  # 4
+            (start_x + 27, start_y + 9), # 5
+            (start_x + 31, start_y + 11), # 6
+            (start_x + 36, start_y + 9), # 7
+            (start_x + 40, start_y + 3),  # 8
+            (start_x + 40, start_y - 3),  # 9
+            (start_x + 35, start_y - 8),  # 10
+            (start_x + 30, start_y - 11), # 11
+            (start_x + 26, start_y - 15), # 12
+            (start_x + 24, start_y - 20), # 13
+            (start_x + 20, start_y - 24), # 14
+            (start_x + 13, start_y - 24), # 15   
+            (start_x + 10, start_y - 29), # 16
+            (start_x + 7, start_y - 32),  # 17
+            (start_x + 1, start_y - 34),  # 18
+            (start_x - 16, start_y - 34), # 19
+            (start_x - 18, start_y - 31), # 20
+            (start_x - 16, start_y - 28), # 21
+            (start_x - 12, start_y - 26), # 22
+            (start_x - 6, start_y - 25),  # 23
+            (start_x + 7, start_y - 17),  # 24
             (start_x + 7, start_y - 12),  # 25
             (start_x + 7, start_y - 7),   # 26
             (start_x + 5, start_y - 5),   # 27
@@ -113,10 +113,10 @@ class Track1:
             (start_x + 5, start_y + 3),    # Turn downward
             (start_x + 10, start_y + 3),   # Continue pit lane
             (start_x + 15, start_y + 3),   # Continue pit lane
-            (start_x + 20, start_y + 3),   # Turn towards exit
-            (start_x + 23, start_y + 2),   # Continue towards pit exit
-            (start_x + 26, start_y + 4),   # Continue turning
-            (start_x + 27, start_y + 10),  # End at waypoint 5
+            (start_x + 21, start_y + 2),   # Turn towards exit
+            (start_x + 25, start_y + 2),   # Continue towards pit exit
+            (start_x + 26, start_y + 3),   # Continue turning
+            (start_x + 27, start_y + 9),  # End at waypoint 5
         ]
         
         print(f"Defined {len(self.track.pit_road_waypoints)} pit road waypoints")
