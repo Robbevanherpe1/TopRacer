@@ -2,7 +2,7 @@ import pygame
 import sys
 import math
 from constants import *
-from game import Game
+from gameplay import Game
 from ui import UI  # This now uses our controller UI class
 from animation import Animation
 from tracks import Track  # Import Track from tracks package instead of track.py
