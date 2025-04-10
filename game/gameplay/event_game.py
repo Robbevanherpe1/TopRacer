@@ -1,6 +1,6 @@
 import pygame
-from constants import *
-from player_data import add_player, delete_player, load_players, get_player_garage, update_player_garage, get_car_upgrades
+from constants.constants import *
+from data.player_data import add_player, delete_player, load_players, get_player_garage, update_player_garage, get_car_upgrades
 
 
 class EventGame:

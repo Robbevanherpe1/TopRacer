@@ -1,4 +1,4 @@
-from player_data import update_player_stats, update_player_garage, get_player_garage, get_car_upgrades
+from data.player_data import update_player_stats, update_player_garage, get_player_garage, get_car_upgrades
 
 
 class PlayerGame:

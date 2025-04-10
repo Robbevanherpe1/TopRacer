@@ -2,8 +2,8 @@ import pygame
 
 from tracks import Track
 from cars import Car
-from constants import *
-from player_data import load_players
+from constants.constants import *
+from data.player_data import load_players
 
 from gameplay.base_game import BaseGame
 from gameplay.player_game import PlayerGame

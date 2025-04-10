@@ -153,8 +153,8 @@ class BaseCar:
                 "Renault": "renault.png"
             }
             filename = sprite_map.get(manufacturer, "ferrari.png")
-            self.car.sprite = pygame.image.load(f"assets/{filename}").convert_alpha()
+            self.car.sprite = pygame.image.load(f"game/assets/{filename}").convert_alpha()
         except Exception as e:
             print(f"Error loading car sprite for {manufacturer}: {e}")
             # Fallback to default
-            self.car.sprite = pygame.image.load("assets/ferrari.png").convert_alpha()
+            self.car.sprite = pygame.image.load("game/assets/ferrari.png").convert_alpha()

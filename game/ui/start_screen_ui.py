@@ -1,6 +1,6 @@
 import pygame
 import math
-from constants import *
+from constants.constants import *
 from ui.base_ui import BaseUI
 
 class StartScreenUI(BaseUI):

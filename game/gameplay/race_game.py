@@ -1,7 +1,7 @@
 import pygame
 import math
 import random
-from constants import *  # Import all constants including STATE_RACING, STATE_RACE_END, SCREEN_WIDTH, etc.
+from constants.constants import *  # Import all constants including STATE_RACING, STATE_RACE_END, SCREEN_WIDTH, etc.
 
 
 class RaceGame:

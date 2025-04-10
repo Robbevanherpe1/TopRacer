@@ -4,7 +4,7 @@ from tracks.draw_track import DrawTrack
 from tracks.one_track import Track1
 
 class Track:
-    def __init__(self, csv_path='tracks/csv/track1_2.csv'):
+    def __init__(self, csv_path='game/tracks/csv/track1_2.csv'):
         self.tile_size = 40  # Increased from 30 to 40
         self.base_track = BaseTrack(self)
         self.draw_track = DrawTrack(self)

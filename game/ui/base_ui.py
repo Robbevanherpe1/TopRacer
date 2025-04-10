@@ -1,5 +1,5 @@
 import pygame
-from constants import *
+from constants.constants import *
 
 class BaseUI:
     """Base UI class with shared functionality for all UI components"""

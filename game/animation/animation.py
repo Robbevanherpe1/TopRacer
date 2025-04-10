@@ -1,7 +1,7 @@
 import pygame
 import random
 import math
-from constants import *
+from constants.constants import *
 
 class Animation:
     def __init__(self, screen):

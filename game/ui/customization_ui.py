@@ -1,6 +1,6 @@
 import pygame
 import math
-from constants import *
+from constants.constants import *
 from ui.base_ui import BaseUI
 
 class CustomizationUI(BaseUI):
@@ -27,7 +27,7 @@ class CustomizationUI(BaseUI):
         # Draw profile section (left side of header)
         # Profile picture
 
-        profile_image = pygame.image.load("assets/helmet.png")
+        profile_image = pygame.image.load("game/assets/helmet.png")
         profile_image = pygame.transform.scale(profile_image, (60, 60))
         self.screen.blit(profile_image, (20, 10))
         

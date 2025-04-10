@@ -1,5 +1,5 @@
 import pygame
-from constants import *
+from constants.constants import *
 from ui.base_ui import BaseUI
 
 class RaceUI(BaseUI):

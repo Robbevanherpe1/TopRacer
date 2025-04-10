@@ -15,9 +15,9 @@ class DrawTrack:
         
         # Load grass texture for trackside
         try:
-            grass_img = pygame.image.load('assets/grass.png')
-            asfalt_img = pygame.image.load('assets/asphalt.png')
-            tirewall_img = pygame.image.load('assets/tirewall.png')
+            grass_img = pygame.image.load('game/assets/grass.png')
+            asfalt_img = pygame.image.load('game/assets/asphalt.png')
+            tirewall_img = pygame.image.load('game/assets/tirewall.png')
             # Scale the image to fit the tile size
             self.track.tile_textures[TRACKSIDE] = pygame.transform.scale(grass_img, (self.track.tile_size, self.track.tile_size))
             self.track.tile_textures[TRACK] = pygame.transform.scale(asfalt_img, (self.track.tile_size, self.track.tile_size))
