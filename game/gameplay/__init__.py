@@ -17,7 +17,7 @@ class Game:
         self.track = Track()
         
         # Create cars with different colors
-        self.colors = [BLUE, RED, GREEN, YELLOW, PURPLE, CYAN, ORANGE]
+        self.colors = [BLUE, RED, GREEN, YELLOW, PURPLE, CYAN, ORANGE, PINK , GRAY, BROWN]
         self.cars = []
         self.selected_car_index = 0
         
@@ -47,7 +47,7 @@ class Game:
         self.engineer_car_indices.append(1)
         
         # Set up three regular AI cars (no push capability)
-        for i in range(3):
+        for i in range(8):
             color = self.colors[i+2]  # Start from 3rd color (green, yellow, purple)
             name = f"AI Car {i+1}"
             car = Car(self.track, color=color, name=name)
