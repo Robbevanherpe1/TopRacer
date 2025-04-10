@@ -35,7 +35,7 @@ class RaceEndUI(BaseUI):
         """Draw the results panel showing final positions"""
         # Create a results panel in the center
         panel_width = 500
-        panel_height = len(game.cars) * 50 + 60
+        panel_height = 5 * 50 + 60
         panel_rect = pygame.Rect(width//2 - panel_width//2, 180, panel_width, panel_height)
         
         # Draw panel background
@@ -48,7 +48,10 @@ class RaceEndUI(BaseUI):
         position_font = pygame.font.SysFont(None, 36)
         detail_font = pygame.font.SysFont(None, 24)
         
-        for i, car_idx in enumerate(game.final_positions):
+        #for i, car_idx in enumerate(game.final_positions):
+        for i in range(5):
+            # Get car index from final positions
+            car_idx = game.final_positions[i]
             car = game.cars[car_idx]
             position = i + 1
             
