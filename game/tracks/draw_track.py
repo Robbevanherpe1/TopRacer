@@ -23,7 +23,7 @@ class DrawTrack:
         self.textures[TRACKSIDE] = pygame.image.load("game/assets/asphalt.png").convert()
         self.textures[PIT] = pygame.image.load("game/assets/tirewall.png").convert()
         self.textures[CAR_SPAWN] = self.textures[TRACK]  # Use track texture for car spawn points
-        self.textures[CAR_SPAWN_POINT] = self.textures[TRACK]  # Use track texture for car spawn points
+        self.textures[CAR_SPAWN_POINT] = pygame.image.load("game/assets/finishline.png").convert()  # Use track texture for car spawn points
 
     def load_from_csv(self, csv_path):
         """Load track data from a CSV file"""
