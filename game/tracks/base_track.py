@@ -185,9 +185,31 @@ class BaseTrack:
                 closest_idx = i
                 
         return closest_idx
+    
+    def get_lane_waypoint_position(self, index, lane):
+        """Get the position of a waypoint in a specific lane"""
+        waypoints = {
+            'center': self.track.waypoints,
+            'left': self.track.waypoints_left,
+            'right': self.track.waypoints_right
+        }
         
-    def get_waypoint_position(self, index, use_pit_road=False):
-        """Return the world coordinates for a specific waypoint, with pit road option"""
+        # Make sure we have valid waypoints for the requested lane
+        if lane not in waypoints or not waypoints[lane]:
+            # Fall back to center lane if requested lane doesn't exist
+            lane = 'center'
+            
+        # Ensure index is valid
+        if 0 <= index < len(waypoints[lane]):
+            waypoint = waypoints[lane][index]
+            return (waypoint[0] * self.track.tile_size + self.track.tile_size // 2, 
+                   waypoint[1] * self.track.tile_size + self.track.tile_size // 2)
+        
+        # Default to the start position if the index is invalid
+        return self.get_start_position()
+        
+    def get_waypoint_position(self, index, use_pit_road=False, lane='center'):
+        """Return the world coordinates for a specific waypoint, with pit road and lane options"""
         # Check if we're using the pit road and requesting a waypoint that would be replaced by it
         if use_pit_road and hasattr(self.track, 'use_pit_road') and self.track.use_pit_road:
             # If we're between waypoints 29 and 5
@@ -210,14 +232,8 @@ class BaseTrack:
                 return (waypoint[0] * self.track.tile_size + self.track.tile_size // 2,
                         waypoint[1] * self.track.tile_size + self.track.tile_size // 2)
         
-        # Regular waypoint handling
-        if 0 <= index < len(self.track.waypoints):
-            waypoint = self.track.waypoints[index]
-            return (waypoint[0] * self.track.tile_size + self.track.tile_size // 2, 
-                    waypoint[1] * self.track.tile_size + self.track.tile_size // 2)
-        
-        # Default to start position if waypoint index is invalid
-        return self.get_start_position()
+        # If not using pit road or not a pit road waypoint, use the specified lane
+        return self.get_lane_waypoint_position(index, lane)
 
 
 

@@ -26,12 +26,70 @@ class PositionCar:
         dx = waypoint_x - self.car.x
         dy = waypoint_y - self.car.y
         self.car.angle = math.degrees(math.atan2(dy, dx))
-
+    
+    def check_nearby_cars(self):
+        """Check for cars nearby in the direction we're heading"""
+        # We need access to all cars from the game
+        if not hasattr(self.car, 'game') or not self.car.game:
+            return []
+            
+        nearby_cars = []
+        
+        # Look for cars that are close to the same waypoint
+        for other_car in self.car.game.cars:
+            if other_car == self.car:
+                continue
+                
+            # Check if they're near the same waypoint
+            waypoint_diff = abs(other_car.current_waypoint - self.car.current_waypoint)
+            
+            # Consider cars 1 waypoint ahead or at the same waypoint
+            if waypoint_diff <= 1 or (waypoint_diff > len(self.car.track.waypoints) - 2):
+                # Calculate distance
+                dx = other_car.x - self.car.x
+                dy = other_car.y - self.car.y
+                distance = (dx**2 + dy**2)**0.5
+                
+                # If cars are within 50 pixels, they're considered nearby
+                if distance < 50:
+                    nearby_cars.append(other_car)
+        
+        return nearby_cars
+        
+    def decide_best_lane(self, nearby_cars):
+        """Based on nearby cars, decide which lane to use"""
+        if not nearby_cars:
+            # If no cars nearby, prefer center lane
+            return self.car.preferred_lane
+            
+        # Count cars in each lane
+        lane_counts = {'center': 0, 'left': 0, 'right': 0}
+        
+        for car in nearby_cars:
+            lane_counts[car.current_lane] += 1
+            
+        # Choose the lane with the fewest cars
+        best_lane = min(lane_counts.items(), key=lambda x: x[1])[0]
+        
+        # If we're already in that lane, return it, otherwise check if we can change
+        if best_lane == self.car.current_lane:
+            return best_lane
+            
+        # Only switch if the difference is significant
+        if (lane_counts[self.car.current_lane] - lane_counts[best_lane]) > 0:
+            return best_lane
+            
+        return self.car.current_lane
+    
     def update(self, dt):
         """Update car position and handle AI driving"""
         # Initialize recovery grace period if not present
         if not hasattr(self.car, 'recovery_grace_period'):
             self.car.recovery_grace_period = 0
+            
+        # Update lane switch cooldown
+        if self.car.lane_switch_cooldown > 0:
+            self.car.lane_switch_cooldown -= 1
             
         if self.car.crashed:
             self.car.recovery_timer -= 1
@@ -95,9 +153,18 @@ class PositionCar:
             self.car.y += random.randint(-15, 15)
             self.car.stuck_counter = 0
             self.car.is_stuck = False
+            
+        # Check for nearby cars and consider lane changes
+        nearby_cars = self.check_nearby_cars()
+        if nearby_cars and self.car.lane_switch_cooldown <= 0:
+            best_lane = self.decide_best_lane(nearby_cars)
+            if best_lane != self.car.current_lane:
+                self.car.switch_to_lane(best_lane)
         
-        # AI driving logic - Get current target waypoint coordinates using pit road if active
-        target_waypoint_pos = self.car.track.get_waypoint_position(self.car.current_waypoint, self.car.take_pit_road)
+        # AI driving logic - Get current target waypoint coordinates using pit road if active and the current lane
+        target_waypoint_pos = self.car.track.get_waypoint_position(self.car.current_waypoint, 
+                                                                 self.car.take_pit_road,
+                                                                 self.car.current_lane)
         waypoint_x, waypoint_y = target_waypoint_pos
         
         # Calculate angle to target waypoint
@@ -202,12 +269,12 @@ class PositionCar:
         
         # Advanced racing line calculation - look ahead by 2 waypoints for better anticipation
         next_wp_idx = (self.car.current_waypoint + 1) % len(self.car.track.waypoints)
-        next_wp_pos = self.car.track.get_waypoint_position(next_wp_idx, self.car.take_pit_road)
+        next_wp_pos = self.car.track.get_waypoint_position(next_wp_idx, self.car.take_pit_road, self.car.current_lane)
         next_wp_x, next_wp_y = next_wp_pos
         
         # Also look at waypoint after next for better planning
         next2_wp_idx = (self.car.current_waypoint + 2) % len(self.car.track.waypoints)
-        next2_wp_pos = self.car.track.get_waypoint_position(next2_wp_idx, self.car.take_pit_road)
+        next2_wp_pos = self.car.track.get_waypoint_position(next2_wp_idx, self.car.take_pit_road, self.car.current_lane)
         next2_wp_x, next2_wp_y = next2_wp_pos
         
         # Calculate angle between current waypoint and next waypoint
@@ -324,7 +391,7 @@ class PositionCar:
         # Smoother speed adjustment in obstacles
         if self.car.avoidance_counter > 0:
             target_speed *= 0.7  # Slow down while avoiding obstacles
-            
+        
         # Convert angle to radians and update position
         radians = math.radians(self.car.angle)
         self.car.x += math.cos(radians) * self.car.speed

@@ -50,6 +50,12 @@ class Car:
             "Brakes": 5      # Affects braking efficiency
         }
         
+        # Lane selection properties
+        self.current_lane = 'center'  # Can be 'center', 'left', or 'right'
+        self.lane_switch_cooldown = 0
+        self.lane_switch_threshold = 30  # Frames to wait between lane switches
+        self.preferred_lane = 'center'   # Where the car prefers to drive when not avoiding others
+        
         # Car physics properties - will be modified by setup
         self.base_max_speed = 6.0
         self.base_acceleration = 0.15
@@ -162,6 +168,40 @@ class Car:
         
     def adjust_setup_balanced(self, key, new_value):
         self.setup_car.adjust_setup_balanced(key, new_value)
+        
+    # Lane switch methods
+    def switch_to_lane(self, lane):
+        """Switch to a specific lane ('center', 'left', 'right')"""
+        if self.lane_switch_cooldown <= 0:
+            self.current_lane = lane
+            self.lane_switch_cooldown = self.lane_switch_threshold
+            if self.debug_mode:
+                print(f"{self.name} switching to {lane} lane")
+            return True
+        return False
+        
+    def try_avoid_car(self, nearby_cars):
+        """Try to switch lanes to avoid nearby cars"""
+        if self.lane_switch_cooldown <= 0:
+            # Get current position of next waypoint based on current lane
+            next_wp_idx = (self.current_waypoint + 1) % len(self.track.waypoints)
+            
+            # Check which lanes are occupied at the next waypoint
+            lane_occupied = {'center': False, 'left': False, 'right': False}
+            
+            for car in nearby_cars:
+                if car != self and abs(car.current_waypoint - self.current_waypoint) <= 1:
+                    lane_occupied[car.current_lane] = True
+            
+            # Try to switch to an unoccupied lane, preferring center
+            if not lane_occupied['center'] and self.current_lane != 'center':
+                return self.switch_to_lane('center')
+            elif not lane_occupied['left'] and self.current_lane != 'left':
+                return self.switch_to_lane('left')
+            elif not lane_occupied['right'] and self.current_lane != 'right':
+                return self.switch_to_lane('right')
+            
+        return False
 
 
 

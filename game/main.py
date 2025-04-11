@@ -97,6 +97,24 @@ def main():
         car.speed = 0
         if hasattr(car, 'avoidance_counter'):
             car.avoidance_counter = 0
+            
+        # Distribute cars across different lanes to avoid overlapping at start
+        # Assign each car to a different lane based on their position in the race
+        if i % 3 == 0:
+            car.current_lane = 'center'
+            car.preferred_lane = 'center'
+        elif i % 3 == 1:
+            car.current_lane = 'left'
+            car.preferred_lane = 'left'
+        else:
+            car.current_lane = 'right'
+            car.preferred_lane = 'right'
+            
+        if car.debug_mode:
+            print(f"{car.name} assigned to {car.current_lane} lane")
+    
+    # Always enable waypoint visualization to see the lane system
+    game.show_waypoints = True
     
     # Add keybinding for toggling collision debug visualization
     collision_debug = False

@@ -18,7 +18,54 @@ class Track:
         self.define_pit_road_waypoints()
         # Flag to enable/disable pit road
         self.use_pit_road = False
-
+        
+        # Add left and right track lanes (alternates to main waypoints)
+        self.waypoints_left = []
+        self.waypoints_right = []
+        # Create the alternate lanes
+        self.create_alternate_lanes()
+    
+    def create_alternate_lanes(self):
+        """Create left and right lane alternatives to the main waypoints"""
+        if not self.waypoints:
+            return
+            
+        # Define an offset for the alternate lanes (perpendicular to track direction)
+        lane_offset = 1  # 1 tile offset
+        
+        # Clear existing alternate lanes
+        self.waypoints_left = []
+        self.waypoints_right = []
+        
+        # For each waypoint, create left and right alternates
+        for i in range(len(self.waypoints)):
+            current_wp = self.waypoints[i]
+            next_wp_idx = (i + 1) % len(self.waypoints)
+            next_wp = self.waypoints[next_wp_idx]
+            
+            # Calculate direction vector between waypoints
+            dx = next_wp[0] - current_wp[0]
+            dy = next_wp[1] - current_wp[1]
+            
+            # Normalize the direction vector
+            length = (dx**2 + dy**2)**0.5
+            if length > 0:
+                dx, dy = dx / length, dy / length
+            
+            # Calculate perpendicular vectors for left and right lanes
+            # Left is 90° counterclockwise, right is 90° clockwise
+            left_dx, left_dy = -dy, dx
+            right_dx, right_dy = dy, -dx
+            
+            # Create offset waypoints
+            left_wp = (current_wp[0] + left_dx * lane_offset, current_wp[1] + left_dy * lane_offset)
+            right_wp = (current_wp[0] + right_dx * lane_offset, current_wp[1] + right_dy * lane_offset)
+            
+            # Add to alternate lanes
+            self.waypoints_left.append(left_wp)
+            self.waypoints_right.append(right_wp)
+        
+        print(f"Created {len(self.waypoints_left)} left lane waypoints and {len(self.waypoints_right)} right lane waypoints")
 
     ## waitpoints track
 
@@ -68,9 +115,9 @@ class Track:
         """Get the index of the closest waypoint to a given position"""
         return self.base_track.get_closest_waypoint(pos)
 
-    def get_waypoint_position(self, index, use_pit_road=False):
-        """Return the world coordinates for a specific waypoint, with pit road option"""
-        return self.base_track.get_waypoint_position(index, use_pit_road)
+    def get_waypoint_position(self, index, use_pit_road=False, lane='center'):
+        """Return the world coordinates for a specific waypoint, with pit road option and lane selection"""
+        return self.base_track.get_waypoint_position(index, use_pit_road, lane)
     
     def is_wall(self, x, y):
         """Check if the given coordinates are in a wall or out of bounds"""
