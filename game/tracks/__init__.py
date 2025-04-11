@@ -1,4 +1,4 @@
-from tracks.constants import EMPTY, TRACK, WALL, FINISH_LINE, TRACKSIDE, CAR_SPAWN, CAR_SPAWN_POINT
+from tracks.constants import EMPTY, TRACK, WALL, PIT, TRACKSIDE, CAR_SPAWN, CAR_SPAWN_POINT
 from tracks.base_track import BaseTrack
 from tracks.draw_track import DrawTrack
 from tracks.one_track import Track1

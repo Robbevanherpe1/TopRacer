@@ -1,4 +1,4 @@
-from tracks.constants import FINISH_LINE, TRACK
+from tracks.constants import PIT, TRACK
 
 class Track1:
     def __init__(self, track):
@@ -9,13 +9,13 @@ class Track1:
         # Reset existing waypoints
         self.track.waypoints = []
         
-        # Find the start line (usually marked by FINISH_LINE type)
+        # Find the start line (usually marked by PIT type)
         start_x, start_y = None, None
         
-        # Look for the starting position (Finish line tile)
+        # Look for the starting position (PIT tile)
         for y in range(self.track.grid_height):
             for x in range(self.track.grid_width):
-                if self.track.grid[y][x] == FINISH_LINE:
+                if self.track.grid[y][x] == PIT:
                     start_x, start_y = x, y
                     break
             if start_x is not None:
@@ -86,7 +86,7 @@ class Track1:
         # Look for the starting position (Finish line tile)
         for y in range(self.track.grid_height):
             for x in range(self.track.grid_width):
-                if self.track.grid[y][x] == FINISH_LINE:
+                if self.track.grid[y][x] == PIT:
                     start_x, start_y = x, y
                     break
             if start_x is not None:

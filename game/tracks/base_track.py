@@ -1,4 +1,4 @@
-from tracks.constants import EMPTY, TRACK, TRACKSIDE, WALL, FINISH_LINE, CAR_SPAWN, CAR_SPAWN_POINT
+from tracks.constants import EMPTY, TRACK, TRACKSIDE, WALL, PIT, CAR_SPAWN, CAR_SPAWN_POINT
 
 class BaseTrack:
     def __init__(self, track):
@@ -18,10 +18,10 @@ class BaseTrack:
                 if self.track.grid[y][x] == CAR_SPAWN:
                     return x * self.track.tile_size + self.track.tile_size // 2, y * self.track.tile_size + self.track.tile_size // 2
         
-        # If no CAR_SPAWN found, try FINISH_LINE
+        # If no CAR_SPAWN found, try PIT
         for y in range(self.track.grid_height):
             for x in range(self.track.grid_width):
-                if self.track.grid[y][x] == FINISH_LINE:
+                if self.track.grid[y][x] == PIT:
                     return x * self.track.tile_size + self.track.tile_size // 2, y * self.track.tile_size + self.track.tile_size // 2
         
         # Default position if nothing found
@@ -48,12 +48,12 @@ class BaseTrack:
                                y * self.track.tile_size + self.track.tile_size // 2)
                         spawn_positions.append(pos)
         
-        # If still no spawns found, use FINISH_LINE with small offsets
+        # If still no spawns found, use PIT with small offsets
         if not spawn_positions:
             finish_pos = None
             for y in range(self.track.grid_height):
                 for x in range(self.track.grid_width):
-                    if self.track.grid[y][x] == FINISH_LINE:
+                    if self.track.grid[y][x] == PIT:
                         finish_pos = (x * self.track.tile_size + self.track.tile_size // 2, 
                                       y * self.track.tile_size + self.track.tile_size // 2)
                         break
@@ -138,7 +138,7 @@ class BaseTrack:
         # Also consider CAR_SPAWN and CAR_SPAWN_POINT as part of the track
         tile_type = self.track.grid[grid_y][grid_x]
         return (tile_type == TRACK or 
-                tile_type == FINISH_LINE or
+                tile_type == PIT or
                 tile_type == TRACKSIDE or
                 tile_type == CAR_SPAWN or
                 tile_type == CAR_SPAWN_POINT)

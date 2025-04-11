@@ -2,7 +2,7 @@ import csv
 import pygame
 import os
 
-from tracks.constants import CAR_SPAWN, CAR_SPAWN_POINT, EMPTY, FINISH_LINE, TRACK, TRACKSIDE, WALL
+from tracks.constants import CAR_SPAWN, CAR_SPAWN_POINT, EMPTY, PIT, TRACK, TRACKSIDE, WALL
 
 
 class DrawTrack:
@@ -20,8 +20,8 @@ class DrawTrack:
         self.textures[EMPTY] = None
         self.textures[WALL] = pygame.image.load("game/assets/tirewall.png").convert_alpha()
         self.textures[TRACK] = pygame.image.load("game/assets/asphalt.png").convert()
-        self.textures[TRACKSIDE] = pygame.image.load("game/assets/grass.png").convert()
-        self.textures[FINISH_LINE] = pygame.image.load("game/assets/finishline.png").convert()
+        self.textures[TRACKSIDE] = pygame.image.load("game/assets/asphalt.png").convert()
+        self.textures[PIT] = pygame.image.load("game/assets/tirewall.png").convert()
         self.textures[CAR_SPAWN] = self.textures[TRACK]  # Use track texture for car spawn points
         self.textures[CAR_SPAWN_POINT] = self.textures[TRACK]  # Use track texture for car spawn points
 
